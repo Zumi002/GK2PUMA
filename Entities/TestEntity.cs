@@ -3,6 +3,8 @@ using GK2PUMA.Graphics;
 
 using Vortice.Mathematics;
 
+namespace GK2PUMA.Entities;
+
 public class TestObject : Entity
 {
     private float _time = 0;

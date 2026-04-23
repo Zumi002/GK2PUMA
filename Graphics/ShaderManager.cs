@@ -1,31 +1,30 @@
-﻿namespace GK2PUMA.Graphics
+﻿namespace GK2PUMA.Graphics;
+
+public class ShaderManager
 {
-    public class ShaderManager
+    private readonly Dictionary<string, Shader> _shaders = new();
+
+    public Shader GetShader(string shaderName)
     {
-        private readonly Dictionary<string, Shader> _shaders = new();
-
-        public Shader GetShader(string shaderName)
+        if (_shaders.TryGetValue(shaderName, out var shader))
         {
-            if (_shaders.TryGetValue(shaderName, out var shader))
-            {
-                return shader;
-            }
-
-            throw new Exception($"Shader not found");
+            return shader;
         }
 
-        public void AddShader(string shaderName, Shader shader)
-        {
-            _shaders.Add(shaderName, shader);
-        }
+        throw new Exception($"Shader not found");
+    }
 
-        public void DisposeAll()
+    public void AddShader(string shaderName, Shader shader)
+    {
+        _shaders.Add(shaderName, shader);
+    }
+
+    public void DisposeAll()
+    {
+        foreach (var shader in _shaders.Values)
         {
-            foreach (var shader in _shaders.Values)
-            {
-                shader.Dispose();
-            }
-            _shaders.Clear();
+            shader.Dispose();
         }
+        _shaders.Clear();
     }
 }
