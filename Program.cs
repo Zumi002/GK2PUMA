@@ -68,29 +68,16 @@ internal class Program
             out _,
             out var context);
 
-        var backBuffer = swapChain.GetBuffer<ID3D11Texture2D>(0);
-        var renderTargetView = device.CreateRenderTargetView(backBuffer);
-        backBuffer.Dispose();
-
         GraphicsContext.Instance.Device = device;
         GraphicsContext.Instance.Context = context;
         GraphicsContext.Instance.SwapChain = swapChain;
-        GraphicsContext.Instance.RenderTargetView = renderTargetView;
-        var depthDesc = new Texture2DDescription
-        {
-            Width = width,
-            Height = height,
-            MipLevels = 1,
-            ArraySize = 1,
-            Format = Format.D24_UNorm_S8_UInt,
-            SampleDescription = new SampleDescription(1, 0),
-            Usage = ResourceUsage.Default,
-            BindFlags = BindFlags.DepthStencil
-        };
 
-        using var depthBuffer = device.CreateTexture2D(depthDesc);
-        GraphicsContext.Instance.DepthStencilView = device.CreateDepthStencilView(depthBuffer);
-        context.RSSetViewport(new Viewport(0, 0, width, height));
+        GraphicsContext.Instance.Resize(width, height);
+
+        s_window.Resize += (size) =>
+        {
+            GraphicsContext.Instance.Resize((uint)size.X, (uint)size.Y);
+        };
 
         var inputElements = new[]
         {

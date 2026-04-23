@@ -1,4 +1,7 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
+
+using GK2PUMA.Graphics;
 
 using Silk.NET.Input;
 
@@ -22,12 +25,36 @@ public class Camera : Entity
     private readonly float _speed = 10.0f;
     private readonly float _sensitivity = 0.002f;
 
+    private float _aspectRatio;
+    private readonly float _fovY;
+    private readonly float _nearPlane;
+    private readonly float _farPlane;
+    private bool _projectionDirty = true;
+
+    public float AspectRatio
+    {
+        get => _aspectRatio;
+        set
+        {
+            if (_aspectRatio != value)
+            {
+                _aspectRatio = value;
+                _projectionDirty = true;
+            }
+        }
+    }
+
     public Camera(float aspectRatio, float fovY = MathF.PI / 4f, float nearPlane = 0.1f, float farPlane = 1000f)
     {
         Position = new Vector3(0, 0, -5);
         Yaw = MathF.PI / 2f;
         Up = Vector3.UnitY;
-        ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfViewLeftHanded(fovY, aspectRatio, nearPlane, farPlane);
+
+        _aspectRatio = aspectRatio;
+        _fovY = fovY;
+        _nearPlane = nearPlane;
+        _farPlane = farPlane;
+
         UpdateVectors();
     }
 
@@ -90,8 +117,20 @@ public class Camera : Entity
 
     public override void Update(float dt)
     {
+        float currentAspect = (float)GraphicsContext.Instance.Width / GraphicsContext.Instance.Height;
+        if (Math.Abs(currentAspect - AspectRatio) > 0.001f)
+        {
+            AspectRatio = currentAspect;
+        }
+
         UpdateVectors();
         ViewMatrix = Matrix4x4.CreateLookAtLeftHanded(Position, Position + Forward, Up);
+
+        if (_projectionDirty)
+        {
+            ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfViewLeftHanded(_fovY, _aspectRatio, _nearPlane, _farPlane);
+            _projectionDirty = false;
+        }
     }
 
     private void UpdateVectors()
