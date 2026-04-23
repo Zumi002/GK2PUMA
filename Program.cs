@@ -1,8 +1,13 @@
-﻿using Silk.NET.Maths;
+﻿using System.Collections.Generic;
+using Silk.NET.Maths;
 using Silk.NET.Windowing;
+using Silk.NET.Input;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
+using Vortice.Mathematics;
+using GK2PUMA.Entities;
+using GK2PUMA.Graphics;
 
 namespace GK2PUMA
 {
@@ -10,6 +15,9 @@ namespace GK2PUMA
     {
         private static IWindow _window;
         private static List<Entity> _gameObjects = new List<Entity>();
+        private static IKeyboard _keyboard;
+        private static IMouse _mouse;
+        private static Camera s_camera;
 
         static void Main(string[] args)
         {
@@ -61,12 +69,50 @@ namespace GK2PUMA
             var renderTargetView = device.CreateRenderTargetView(backBuffer);
             backBuffer.Dispose();
 
-            Graphics.Instance.Device = device;
-            Graphics.Instance.Context = context;
-            Graphics.Instance.SwapChain = swapChain;
-            Graphics.Instance.RenderTargetView = renderTargetView;
+            GraphicsContext.Instance.Device = device;
+            GraphicsContext.Instance.Context = context;
+            GraphicsContext.Instance.SwapChain = swapChain;
+            GraphicsContext.Instance.RenderTargetView = renderTargetView;
+            var depthDesc = new Texture2DDescription
+            {
+                Width = width,
+                Height = height,
+                MipLevels = 1,
+                ArraySize = 1,
+                Format = Format.D24_UNorm_S8_UInt,
+                SampleDescription = new SampleDescription(1, 0),
+                Usage = ResourceUsage.Default,
+                BindFlags = BindFlags.DepthStencil
+            };
 
-            _gameObjects.Add(new TestObject());
+            using var depthBuffer = device.CreateTexture2D(depthDesc);
+            GraphicsContext.Instance.DepthStencilView = device.CreateDepthStencilView(depthBuffer);
+            context.RSSetViewport(new Viewport(0, 0, width, height));
+
+            var inputElements = new[]
+            {
+                new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
+                new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 12, 0)
+            };
+
+            var unlitShader = new Shader("GK2PUMA.Shaders.unlitVS.hlsl", "GK2PUMA.Shaders.unlitPS.hlsl", inputElements);
+            GraphicsContext.Instance.ShaderManager.AddShader("Unlit", unlitShader);
+
+            var input = _window.CreateInput();
+            _keyboard = input.Keyboards[0];
+            _mouse = input.Mice[0];
+
+            s_camera = new Camera((float)width / height);
+
+            _gameObjects.Add(s_camera);
+            _gameObjects.Add(new InsideCube());
+            var myQuad = new Quad();
+
+            myQuad.Transform.Position = new System.Numerics.Vector3(0, -1, 2);
+            myQuad.Transform.Rotation = new System.Numerics.Vector3(1.0f, 0.5f, 0);
+            myQuad.Transform.Scale = 2.0f;
+
+            _gameObjects.Add(myQuad);
         }
 
         private static void OnUpdate(double deltaTime)
@@ -75,7 +121,7 @@ namespace GK2PUMA
 
             foreach (var obj in _gameObjects)
             {
-                obj.HandleInput();
+                obj.HandleInput(_keyboard, _mouse, dt);
             }
 
             foreach (var obj in _gameObjects)
@@ -86,22 +132,25 @@ namespace GK2PUMA
 
         private static void OnRender(double deltaTime)
         {
-            Graphics.Instance.Context.OMSetRenderTargets(Graphics.Instance.RenderTargetView);
+            GraphicsContext.Instance.Context.ClearRenderTargetView(GraphicsContext.Instance.RenderTargetView, new Color4(0.1f, 0.1f, 0.1f, 1.0f));
+            GraphicsContext.Instance.Context.ClearDepthStencilView(GraphicsContext.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
+            GraphicsContext.Instance.Context.OMSetRenderTargets(GraphicsContext.Instance.RenderTargetView, GraphicsContext.Instance.DepthStencilView);
 
             foreach (var obj in _gameObjects)
             {
-                obj.Render();
+                obj.Render(s_camera);
             }
 
-            Graphics.Instance.SwapChain.Present(1, PresentFlags.None);
+            GraphicsContext.Instance.SwapChain.Present(1, PresentFlags.None);
         }
 
         private static void OnClosing()
         {
-            Graphics.Instance.RenderTargetView?.Dispose();
-            Graphics.Instance.SwapChain?.Dispose();
-            Graphics.Instance.Context?.Dispose();
-            Graphics.Instance.Device?.Dispose();
+            GraphicsContext.Instance.ShaderManager.DisposeAll();
+            GraphicsContext.Instance.RenderTargetView?.Dispose();
+            GraphicsContext.Instance.SwapChain?.Dispose();
+            GraphicsContext.Instance.Context?.Dispose();
+            GraphicsContext.Instance.Device?.Dispose();
         }
     }
 }
