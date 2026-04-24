@@ -1,5 +1,9 @@
-﻿using GK2PUMA;
+﻿using GK2PUMA.Entities;
+using GK2PUMA.Graphics;
+
 using Vortice.Mathematics;
+
+namespace GK2PUMA.Entities;
 
 public class TestObject : Entity
 {
@@ -10,10 +14,10 @@ public class TestObject : Entity
         _time += dt;
     }
 
-    public override void Render()
+    public override void Render(Camera camera)
     {
-        var context = Graphics.Instance.Context;
-        var rtv = Graphics.Instance.RenderTargetView;
+        var context = GI.Instance.Context;
+        var rtv = GI.Instance.RenderTargetView;
 
         context.ClearRenderTargetView(rtv, new Color4(
             float.Abs(float.Sin(_time)),
