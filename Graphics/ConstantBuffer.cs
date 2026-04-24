@@ -11,7 +11,7 @@ public class ConstantBuffer<T> : IDisposable where T : unmanaged
 
     public ConstantBuffer()
     {
-        var device = GraphicsContext.Instance.Device;
+        var device = GI.Instance.Device;
 
         var cbDesc = new BufferDescription()
         {
@@ -26,7 +26,7 @@ public class ConstantBuffer<T> : IDisposable where T : unmanaged
 
     public unsafe void Update(T data)
     {
-        var context = GraphicsContext.Instance.Context;
+        var context = GI.Instance.Context;
         var mappedResource = context.Map(Buffer, 0, MapMode.WriteDiscard, Vortice.Direct3D11.MapFlags.None);
         Unsafe.CopyBlock(mappedResource.DataPointer.ToPointer(), Unsafe.AsPointer(ref data), (uint)Unsafe.SizeOf<T>());
         context.Unmap(Buffer, 0);
@@ -35,7 +35,7 @@ public class ConstantBuffer<T> : IDisposable where T : unmanaged
 
     public void Bind(int slot = 0)
     {
-        var context = GraphicsContext.Instance.Context;
+        var context = GI.Instance.Context;
         context.VSSetConstantBuffer((uint)slot, Buffer);
         context.PSSetConstantBuffer((uint)slot, Buffer);
     }

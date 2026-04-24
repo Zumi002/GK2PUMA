@@ -1,0 +1,1 @@
+﻿global using GI = GK2PUMA.Graphics.GraphicsContext;

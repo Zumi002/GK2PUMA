@@ -1,7 +1,6 @@
-﻿using GK2PUMA.Entities;
+﻿using Silk.NET.Input;
 
-using Silk.NET.Input;
-
+namespace GK2PUMA.Entities;
 public abstract class Entity
 {
     public virtual void HandleInput(IKeyboard keyboard, IMouse mouse, float dt) { }

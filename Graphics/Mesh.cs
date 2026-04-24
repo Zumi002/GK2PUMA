@@ -25,7 +25,7 @@ public class Mesh : IDisposable
 
     public Mesh(IEnumerable<Vertex> vertices, IEnumerable<uint> indices)
     {
-        var device = GraphicsContext.Instance.Device;
+        var device = GI.Instance.Device;
 
         var vArray = vertices.ToArray();
         var iArray = indices.ToArray();
@@ -37,7 +37,7 @@ public class Mesh : IDisposable
 
     public void Bind()
     {
-        var context = GraphicsContext.Instance.Context;
+        var context = GI.Instance.Context;
 
         context.IASetVertexBuffer(0, VertexBuffer, 24, 0);
         context.IASetIndexBuffer(IndexBuffer, Vortice.DXGI.Format.R32_UInt, 0);
@@ -46,7 +46,7 @@ public class Mesh : IDisposable
 
     public void Unbind()
     {
-        var context = GraphicsContext.Instance.Context;
+        var context = GI.Instance.Context;
         context.IASetVertexBuffer(0, null, 0, 0);
         context.IASetIndexBuffer(null, Vortice.DXGI.Format.Unknown, 0);
     }

@@ -7,9 +7,7 @@ public static class Resources
 {
     public static string ReadResource(string resourcePath)
     {
-        var assembly = Assembly.GetExecutingAssembly();
-
-        using Stream stream = assembly.GetManifestResourceStream(resourcePath);
+        using Stream stream = GetResourceStream(resourcePath);
         using StreamReader reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }

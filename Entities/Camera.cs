@@ -36,7 +36,7 @@ public class Camera : Entity
         get => _aspectRatio;
         set
         {
-            if (_aspectRatio != value)
+            if (Math.Abs(value - AspectRatio) > 0.001f)
             {
                 _aspectRatio = value;
                 _projectionDirty = true;
@@ -117,7 +117,7 @@ public class Camera : Entity
 
     public override void Update(float dt)
     {
-        float currentAspect = (float)GraphicsContext.Instance.Width / GraphicsContext.Instance.Height;
+        float currentAspect = (float)GI.Instance.Width / GI.Instance.Height;
         if (Math.Abs(currentAspect - AspectRatio) > 0.001f)
         {
             AspectRatio = currentAspect;

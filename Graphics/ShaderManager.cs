@@ -25,6 +25,7 @@ public class ShaderManager
         {
             shader.Dispose();
         }
+
         _shaders.Clear();
     }
 }

@@ -33,7 +33,7 @@ public class Quad : Entity
 
     public override void Render(Camera camera)
     {
-        var shader = GraphicsContext.Instance.ShaderManager.GetShader("Unlit");
+        var shader = GI.Instance.ShaderManager.GetShader("Unlit");
         shader.Use();
 
         _constantBuffer.Update(new ConstantBufferData
@@ -47,7 +47,7 @@ public class Quad : Entity
         _constantBuffer.Bind(0);
         _mesh.Bind();
 
-        GraphicsContext.Instance.Context.DrawIndexed((uint)_mesh.IndexCount, 0, 0);
+        GI.Instance.Context.DrawIndexed((uint)_mesh.IndexCount, 0, 0);
 
         _mesh.Unbind();
     }

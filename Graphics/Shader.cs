@@ -34,7 +34,7 @@ public class Shader : IDisposable
 
     public void Use()
     {
-        var context = GraphicsContext.Instance.Context;
+        var context = GI.Instance.Context;
 
         context.IASetInputLayout(InputLayout);
         context.VSSetShader(VertexShader);

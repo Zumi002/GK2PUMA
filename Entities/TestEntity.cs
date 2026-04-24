@@ -16,8 +16,8 @@ public class TestObject : Entity
 
     public override void Render(Camera camera)
     {
-        var context = GraphicsContext.Instance.Context;
-        var rtv = GraphicsContext.Instance.RenderTargetView;
+        var context = GI.Instance.Context;
+        var rtv = GI.Instance.RenderTargetView;
 
         context.ClearRenderTargetView(rtv, new Color4(
             float.Abs(float.Sin(_time)),
