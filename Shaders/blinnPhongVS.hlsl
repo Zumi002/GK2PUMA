@@ -14,7 +14,7 @@ PS_INPUT VS(VS_INPUT input)
     float4 worldPos = mul(Model, float4(input.Pos, 1.0f));
     output.WorldPos = (float3)worldPos;
     output.Pos = mul(Projection, mul(View, worldPos));
-    output.Norm = mul((float3x3) ModelInvT, input.Norm);
+    output.Norm = mul(input.Norm, (float3x3) ModelInv);
     float3 cameraPos = mul(-View[3].xyz, (float3x3)View);
     output.View = cameraPos - output.WorldPos;
 

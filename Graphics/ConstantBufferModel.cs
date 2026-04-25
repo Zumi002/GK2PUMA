@@ -7,5 +7,5 @@ namespace GK2PUMA.Graphics;
 public struct ConstantBufferModel
 {
     public Matrix4x4 Model;
-    public Matrix4x4 ModelInvT;
+    public Matrix4x4 ModelInv;
 }

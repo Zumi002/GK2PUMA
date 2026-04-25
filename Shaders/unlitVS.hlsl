@@ -20,7 +20,7 @@ PS_INPUT VS(VS_INPUT input)
     float4 viewPos = mul(View, worldPos);
     output.Pos = mul(Projection, viewPos);
     
-    output.Norm = mul((float3x3) Model, input.Norm);
+    output.Norm = mul(input.Norm, (float3x3) ModelInv);
     
     return output;
 }

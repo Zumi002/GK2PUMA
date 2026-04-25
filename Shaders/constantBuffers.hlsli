@@ -2,7 +2,7 @@
 cbuffer ConstantBuffer : register(b0)
 {
     matrix Model;
-    matrix ModelInvT;
+    matrix ModelInv;
 }
 
 cbuffer ConstantBuffer : register(b1)

@@ -80,7 +80,7 @@ public class InsideCube : Entity
             _constantBufferModel.Update(new ConstantBufferModel
             {
                 Model = Transform.ModelMatrix, 
-                ModelInvT = Matrix4x4.Transpose(Transform.InvModelMatrix),
+                ModelInv = Transform.InvModelMatrix,
             });
             _constantBufferModelIsDirty = false;
         }

@@ -76,7 +76,7 @@ public sealed class Puma : Entity, IDisposable
             _constantBufferModel[i].Update(new ConstantBufferModel
             {
                 Model = chainedMatrix, 
-                ModelInvT = Matrix4x4.Transpose(invChained),
+                ModelInv = invChained,
             });
 
             _constantBufferModel[i].Bind();
