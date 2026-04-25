@@ -1,3 +1,5 @@
+// #define DANCE
+
 using System.Numerics;
 
 using GK2PUMA.Entities.PumaParser;
@@ -83,6 +85,17 @@ public sealed class Puma : Entity, IDisposable
         }
 
         _meshes[PartCount - 1].Unbind();
+    }
+
+    public override void Update(float deltaTime)
+    {
+#if DANCE 
+        Transforms[1].Rotation += new Vector3(0.0f, 0.025f, 0.0f);
+        Transforms[2].Rotation += new Vector3(0.0f, 0.0f, 0.025f);
+        Transforms[3].Rotation += new Vector3(0.0f, 0.0f, 0.025f);
+        Transforms[4].Rotation += new Vector3(0.025f, 0.0f, 0.0f);
+        Transforms[5].Rotation += new Vector3(0.0f, 0.0f, 0.025f);
+#endif
     }
 
     public void Dispose()

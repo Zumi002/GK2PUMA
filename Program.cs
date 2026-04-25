@@ -1,5 +1,4 @@
-﻿#define DANCE
-using System.Numerics;
+﻿using System.Numerics;
 
 using GK2PUMA.Entities;
 using GK2PUMA.Graphics;
@@ -7,6 +6,7 @@ using GK2PUMA.Graphics;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
+using Silk.NET.Windowing.Glfw;
 
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
@@ -26,7 +26,7 @@ internal class Program
     static void Main(string[] args)
     {
         var options = WindowOptions.Default;
-        Silk.NET.Windowing.Glfw.GlfwWindowing.Use();
+        GlfwWindowing.Use();
         options.API = GraphicsAPI.None;
         options.Size = new Vector2D<int>(1280, 720);
         options.Title = "GK2PUMA";
@@ -100,9 +100,6 @@ internal class Program
         s_camera = new Camera((float)width / height);
 
         var puma = new Puma();
-#if DANCE
-        s_puma = puma;
-#endif
         puma.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1, 1);
         puma.Transform.Rotation = new Vector3(0.0f, 180.0f, 0.0f);
         GameObjects.Add(puma);
@@ -126,10 +123,6 @@ internal class Program
         GameObjects.Add(myQuad);
     }
 
-#if DANCE
-    private static Puma? s_puma;
-#endif
-
     private static void OnUpdate(double deltaTime)
     {
         float dt = (float)deltaTime;
@@ -147,17 +140,6 @@ internal class Program
 
     private static void OnRender(double deltaTime)
     {
-#if DANCE
-        if (s_puma != null)
-        {
-            s_puma.Transforms[1].Rotation += new Vector3(0.0f, 0.025f, 0.0f);
-            s_puma.Transforms[2].Rotation += new Vector3(0.0f, 0.0f, 0.025f);
-            s_puma.Transforms[3].Rotation += new Vector3(0.0f, 0.0f, 0.025f);
-            s_puma.Transforms[4].Rotation += new Vector3(0.025f, 0.0f, 0.0f);
-            s_puma.Transforms[5].Rotation += new Vector3(0.0f, 0.0f, 0.025f);
-        }
-#endif
-
         GI.Instance.LightManager.Clear();
         s_camera.UpdateAndBindViewProjBuffer();
 
