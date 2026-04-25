@@ -63,12 +63,14 @@ public class InsideCube : Entity
 
     public override void Render(Camera camera)
     {
-        var shader = GI.Instance.ShaderManager.GetShader("Unlit");
+        var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.UnlitShaderName);
         shader.Use();
 
+        Matrix4x4.Invert(TransformMatrix, out var invModel);
         _constantBuffer.Update(new ConstantBufferData
         {
             Model = Matrix4x4.Transpose(TransformMatrix),
+            ModelInvT = invModel,
             View = Matrix4x4.Transpose(camera.ViewMatrix),
             Projection = Matrix4x4.Transpose(camera.ProjectionMatrix),
             SurfaceColor = Color

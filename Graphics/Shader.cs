@@ -1,4 +1,6 @@
-﻿using Vortice.D3DCompiler;
+﻿using System.Text.RegularExpressions;
+
+using Vortice.D3DCompiler;
 using Vortice.Direct3D11;
 
 namespace GK2PUMA.Graphics;
@@ -13,8 +15,13 @@ public class Shader : IDisposable
     {
         var device = GraphicsContext.Instance.Device;
 
-        string vsSource = Resources.ReadResource(vsPath);
-        string psSource = Resources.ReadResource(psPath);
+        // Derive "GK2PUMA.Shaders." from "GK2PUMA.Shaders.phongVS.hlsl"
+        int lastDot = vsPath.LastIndexOf('.');
+        int secondLastDot = lastDot > 0 ? vsPath.LastIndexOf('.', lastDot - 1) : -1;
+        string resourcePrefix = secondLastDot >= 0 ? vsPath[..(secondLastDot + 1)] : string.Empty;
+
+        string vsSource = ResolveIncludes(Resources.ReadResource(vsPath), resourcePrefix);
+        string psSource = ResolveIncludes(Resources.ReadResource(psPath), resourcePrefix);
 
         try
         {
@@ -30,6 +37,12 @@ public class Shader : IDisposable
         {
             throw new Exception($"Shader compilation failed:\n{ex.Message}", ex);
         }
+    }
+
+    private static string ResolveIncludes(string source, string resourcePrefix)
+    {
+        return Regex.Replace(source, @"#include\s+""([^""]+)""", m =>
+            Resources.ReadResource(resourcePrefix + m.Groups[1].Value));
     }
 
     public void Use()

@@ -1,6 +1,7 @@
 ﻿cbuffer ConstantBuffer : register(b0)
 {
     matrix Model;
+    matrix ModelInvT;
     matrix View;
     matrix Projection;
     float4 SurfaceColor;

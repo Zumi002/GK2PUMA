@@ -14,8 +14,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Shaders\phong.hlsli" />
+    <EmbeddedResource Include="Shaders\phongPS.hlsl" />
+    <EmbeddedResource Include="Shaders\phongVS.hlsl" />
     <EmbeddedResource Include="Shaders\unlitPS.hlsl" />
     <EmbeddedResource Include="Shaders\unlitVS.hlsl" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Meshes\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

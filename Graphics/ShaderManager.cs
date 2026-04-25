@@ -2,6 +2,9 @@
 
 public class ShaderManager
 {
+    public const string UnlitShaderName = "Unlit";
+    public const string PhongShaderName = "Phong";
+    
     private readonly Dictionary<string, Shader> _shaders = new();
 
     public Shader GetShader(string shaderName)

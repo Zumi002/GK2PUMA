@@ -68,25 +68,28 @@ internal class Program
             out _,
             out var context);
 
-        GraphicsContext.Instance.Device = device;
-        GraphicsContext.Instance.Context = context;
-        GraphicsContext.Instance.SwapChain = swapChain;
+        GI.Instance.Device = device;
+        GI.Instance.Context = context;
+        GI.Instance.SwapChain = swapChain;
 
-        GraphicsContext.Instance.Resize(width, height);
+        GI.Instance.Resize(width, height);
 
         s_window.Resize += (size) =>
         {
-            GraphicsContext.Instance.Resize((uint)size.X, (uint)size.Y);
+            GI.Instance.Resize((uint)size.X, (uint)size.Y);
         };
 
-        var inputElements = new[]
+        var unlitShaderInputElements = new[]
         {
             new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
             new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 12, 0)
         };
 
-        var unlitShader = new Shader("GK2PUMA.Shaders.unlitVS.hlsl", "GK2PUMA.Shaders.unlitPS.hlsl", inputElements);
-        GraphicsContext.Instance.ShaderManager.AddShader("Unlit", unlitShader);
+        const string basePath = "GK2PUMA.Shaders.";
+        var unlitShader = new Shader($"{basePath}unlitVS.hlsl", $"{basePath}unlitPS.hlsl", unlitShaderInputElements);
+        var phongShader = new Shader($"{basePath}phongVS.hlsl", $"{basePath}phongPS.hlsl", unlitShaderInputElements);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.UnlitShaderName, unlitShader);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.PhongShaderName, phongShader);
 
         var input = s_window.CreateInput();
         s_keyboard = input.Keyboards[0];
@@ -103,6 +106,10 @@ internal class Program
         myQuad.Transform.Scale = 2.0f;
 
         GameObjects.Add(myQuad);
+
+        var puma = new Puma();
+        puma.Transform.Position = new System.Numerics.Vector3(0, 0, 1);
+        GameObjects.Add(puma);
     }
 
     private static void OnUpdate(double deltaTime)
@@ -122,24 +129,29 @@ internal class Program
 
     private static void OnRender(double deltaTime)
     {
-        GraphicsContext.Instance.Context.ClearRenderTargetView(GraphicsContext.Instance.RenderTargetView, new Color4(0.1f, 0.1f, 0.1f, 1.0f));
-        GraphicsContext.Instance.Context.ClearDepthStencilView(GraphicsContext.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
-        GraphicsContext.Instance.Context.OMSetRenderTargets(GraphicsContext.Instance.RenderTargetView, GraphicsContext.Instance.DepthStencilView);
+        GI.Instance.Context.ClearRenderTargetView(GI.Instance.RenderTargetView, new Color4(0.1f, 0.1f, 0.1f, 1.0f));
+        GI.Instance.Context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
+        GI.Instance.Context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
 
         foreach (var obj in GameObjects)
         {
             obj.Render(s_camera);
         }
 
-        GraphicsContext.Instance.SwapChain.Present(1, PresentFlags.None);
+        GI.Instance.SwapChain.Present(1, PresentFlags.None);
     }
 
     private static void OnClosing()
     {
-        GraphicsContext.Instance.ShaderManager.DisposeAll();
-        GraphicsContext.Instance.RenderTargetView?.Dispose();
-        GraphicsContext.Instance.SwapChain?.Dispose();
-        GraphicsContext.Instance.Context?.Dispose();
-        GraphicsContext.Instance.Device?.Dispose();
+        foreach (var obj in GameObjects)
+        {
+            (obj as IDisposable)?.Dispose();
+        }
+
+        GI.Instance.ShaderManager.DisposeAll();
+        GI.Instance.RenderTargetView?.Dispose();
+        GI.Instance.SwapChain?.Dispose();
+        GI.Instance.Context?.Dispose();
+        GI.Instance.Device?.Dispose();
     }
 }
