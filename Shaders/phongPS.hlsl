@@ -12,12 +12,16 @@ cbuffer ConstantBuffer : register(b0)
     float4 CameraPos;
 }
 
-static const float4 LightPos[NLIGHTS] = { float4(3, 5, -3, 1), float4(-3, 5, 3, 1) };
-static const float3 LightColor[NLIGHTS] = { float3(1, 1, 1), float3(0.5, 0.5, 0.5) };
+cbuffer LightBuffer : register(b1)
+{
+    float4 LightPos[NLIGHTS];
+    float4 LightColor[NLIGHTS];
+}
+
 static const float ks = 0.3;
 static const float kd = 0.7;
 static const float ka = 0.1;
-static const float m = 20.0;
+static const float m = 5.0;
 
 float4 phong(float3 worldPos, float3 norm, float3 view)
 {

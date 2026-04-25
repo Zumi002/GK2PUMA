@@ -97,18 +97,27 @@ internal class Program
 
         s_camera = new Camera((float)width / height);
 
+        var puma = new Puma();
+        puma.Transform.Position = new System.Numerics.Vector3(0, -InsideCube.HalfSize + 1, 1);
+
+        // Add point light before other entities to populate LightManager first
+        GameObjects.Add(
+            new PointLight(
+                position: puma.Transform.Position + new System.Numerics.Vector3(-1, 3, 0),
+                color: new System.Numerics.Vector4(1.0f, 1.0f, 1.0f, 1.0f)
+            )
+        );
+
         GameObjects.Add(s_camera);
         GameObjects.Add(new InsideCube());
-        var myQuad = new Quad();
 
-        myQuad.Transform.Position = new System.Numerics.Vector3(0, -1, 2);
+        var myQuad = new Quad();
+        myQuad.Transform.Position = new System.Numerics.Vector3(0, -InsideCube.HalfSize + 1, 2);
         myQuad.Transform.Rotation = new System.Numerics.Vector3(1.0f, 0.5f, 0);
         myQuad.Transform.Scale = 2.0f;
 
         GameObjects.Add(myQuad);
 
-        var puma = new Puma();
-        puma.Transform.Position = new System.Numerics.Vector3(0, 0, 1);
         GameObjects.Add(puma);
     }
 
@@ -129,6 +138,8 @@ internal class Program
 
     private static void OnRender(double deltaTime)
     {
+        GI.Instance.LightManager.Clear();
+
         GI.Instance.Context.ClearRenderTargetView(GI.Instance.RenderTargetView, new Color4(0.1f, 0.1f, 0.1f, 1.0f));
         GI.Instance.Context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
         GI.Instance.Context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
@@ -148,6 +159,7 @@ internal class Program
             (obj as IDisposable)?.Dispose();
         }
 
+        GI.Instance.LightManager.Dispose();
         GI.Instance.ShaderManager.DisposeAll();
         GI.Instance.RenderTargetView?.Dispose();
         GI.Instance.SwapChain?.Dispose();

@@ -179,6 +179,7 @@ public sealed class Puma : Entity, IDisposable
             CameraPos = new Vector4(camera.Position, 1f),
         });
         _constantBuffer.Bind(0);
+        GI.Instance.LightManager.Bind(1);
 
         foreach (var mesh in _meshes)
         {

@@ -11,6 +11,7 @@ public class InsideCube : Entity
 
     public Matrix4x4 TransformMatrix = Matrix4x4.Identity;
     public Vector4 Color = new (0.3f, 0.3f, 0.3f, 1.0f);
+    public const float HalfSize = 5.0f;
 
     public InsideCube()
     {
@@ -63,7 +64,7 @@ public class InsideCube : Entity
 
     public override void Render(Camera camera)
     {
-        var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.UnlitShaderName);
+        var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.PhongShaderName);
         shader.Use();
 
         Matrix4x4.Invert(TransformMatrix, out var invModel);

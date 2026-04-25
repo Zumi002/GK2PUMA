@@ -33,7 +33,7 @@ public class Quad : Entity
 
     public override void Render(Camera camera)
     {
-        var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.UnlitShaderName);
+        var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.PhongShaderName);
         shader.Use();
 
         Matrix4x4.Invert(Transform.ModelMatrix, out var invModel);
