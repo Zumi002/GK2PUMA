@@ -33,8 +33,6 @@ public class Quad : Entity
         _mesh = new Mesh(vertices, indices);
         _constantBufferModel = new ConstantBuffer<ConstantBufferModel>();
         _constantBufferSurfaceColor = new ConstantBuffer<ConstantBufferSurfaceColor>();
-        
-        // Quad owns the transform, so we can omit unsubscribing
         Transform.OnMatricesRecalculated += _ => _constantBufferModelIsDirty = true;
     }
 

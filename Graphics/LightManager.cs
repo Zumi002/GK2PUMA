@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace GK2PUMA.Graphics;
 
-public sealed class LightManager : IDisposable
+public class LightManager : IDisposable
 {
     private ConstantBufferLight.LightArray _positions;
     private ConstantBufferLight.LightArray _colors;
