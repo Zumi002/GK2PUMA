@@ -19,7 +19,7 @@ public class GraphicsContext
 
     public uint Width { get; private set; }
     public uint Height { get; private set; }
-
+    
     private GraphicsContext() { }
     public void Resize(uint width, uint height)
     {

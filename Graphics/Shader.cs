@@ -1,6 +1,8 @@
-﻿using System.Text.RegularExpressions;
+using System.Text;
 
+using SharpGen.Runtime;
 using Vortice.D3DCompiler;
+using Vortice.Direct3D;
 using Vortice.Direct3D11;
 
 namespace GK2PUMA.Graphics;
@@ -15,20 +17,18 @@ public class Shader : IDisposable
     {
         var device = GraphicsContext.Instance.Device;
 
-        // Derive "GK2PUMA.Shaders." from "GK2PUMA.Shaders.phongVS.hlsl"
         int lastDot = vsPath.LastIndexOf('.');
         int secondLastDot = lastDot > 0 ? vsPath.LastIndexOf('.', lastDot - 1) : -1;
         string resourcePrefix = secondLastDot >= 0 ? vsPath[..(secondLastDot + 1)] : string.Empty;
 
-        string vsSource = ResolveIncludes(Resources.ReadResource(vsPath), resourcePrefix);
-        string psSource = ResolveIncludes(Resources.ReadResource(psPath), resourcePrefix);
+        using var include = new EmbeddedInclude(resourcePrefix);
 
         try
         {
-            var vsBlob = Compiler.Compile(vsSource, "VS", vsPath, "vs_5_0");
+            var vsBlob = Compiler.Compile(Resources.ReadResource(vsPath), null, include, "VS", vsPath, "vs_5_0");
             VertexShader = device.CreateVertexShader(vsBlob.Span);
 
-            var psBlob = Compiler.Compile(psSource, "PS", psPath, "ps_5_0");
+            var psBlob = Compiler.Compile(Resources.ReadResource(psPath), null, include, "PS", psPath, "ps_5_0");
             PixelShader = device.CreatePixelShader(psBlob.Span);
 
             InputLayout = device.CreateInputLayout(inputElements, vsBlob.Span);
@@ -39,10 +39,21 @@ public class Shader : IDisposable
         }
     }
 
-    private static string ResolveIncludes(string source, string resourcePrefix)
+    private sealed class EmbeddedInclude : CallbackBase, Include
     {
-        return Regex.Replace(source, @"#include\s+""([^""]+)""", m =>
-            Resources.ReadResource(resourcePrefix + m.Groups[1].Value));
+        private readonly string _prefix;
+
+        public EmbeddedInclude(string prefix)
+        {
+            _prefix = prefix;
+        }
+
+        public Stream Open(IncludeType type, string fileName, Stream? parentStream)
+        {
+            return new MemoryStream(Encoding.UTF8.GetBytes(Resources.ReadResource(_prefix + fileName)));
+        }
+
+        public void Close(Stream stream) => stream.Dispose();
     }
 
     public void Use()

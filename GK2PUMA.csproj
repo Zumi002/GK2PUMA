@@ -14,9 +14,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Shaders\phong.hlsli" />
-    <EmbeddedResource Include="Shaders\phongPS.hlsl" />
-    <EmbeddedResource Include="Shaders\phongVS.hlsl" />
+    <EmbeddedResource Include="Shaders\constantBuffers.hlsli" />
+    <EmbeddedResource Include="Shaders\blinnPhong.hlsli" />
+    <EmbeddedResource Include="Shaders\blinnPhongPS.hlsl" />
+    <EmbeddedResource Include="Shaders\blinnPhongVS.hlsl" />
     <EmbeddedResource Include="Shaders\unlitPS.hlsl" />
     <EmbeddedResource Include="Shaders\unlitVS.hlsl" />
   </ItemGroup>

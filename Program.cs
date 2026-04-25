@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿#define DANCE
+using System.Numerics;
 
 using GK2PUMA.Entities;
 using GK2PUMA.Graphics;
@@ -85,11 +86,12 @@ internal class Program
             new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 12, 0)
         };
 
-        const string basePath = "GK2PUMA.Shaders.";
-        var unlitShader = new Shader($"{basePath}unlitVS.hlsl", $"{basePath}unlitPS.hlsl", unlitShaderInputElements);
-        var phongShader = new Shader($"{basePath}phongVS.hlsl", $"{basePath}phongPS.hlsl", unlitShaderInputElements);
-        GI.Instance.ShaderManager.AddShader(ShaderManager.UnlitShaderName, unlitShader);
-        GI.Instance.ShaderManager.AddShader(ShaderManager.PhongShaderName, phongShader);
+        var unlitShader = new Shader($"{ShaderManager.BasePath}unlitVS.hlsl", $"{ShaderManager.BasePath}unlitPS.hlsl",
+            unlitShaderInputElements);
+        var phongShader = new Shader($"{ShaderManager.BasePath}blinnPhongVS.hlsl",
+            $"{ShaderManager.BasePath}blinnPhongPS.hlsl", unlitShaderInputElements);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.Unlit, unlitShader);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.BlinnPhong, phongShader);
 
         var input = s_window.CreateInput();
         s_keyboard = input.Keyboards[0];
@@ -98,28 +100,35 @@ internal class Program
         s_camera = new Camera((float)width / height);
 
         var puma = new Puma();
-        puma.Transform.Position = new System.Numerics.Vector3(0, -InsideCube.HalfSize + 1, 1);
+#if DANCE
+        s_puma = puma;
+#endif
+        puma.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1, 1);
+        puma.Transform.Rotation = new Vector3(0.0f, 180.0f, 0.0f);
+        GameObjects.Add(puma);
 
-        // Add point light before other entities to populate LightManager first
-        GameObjects.Add(
-            new PointLight(
-                position: puma.Transform.Position + new System.Numerics.Vector3(-1, 3, 0),
-                color: new System.Numerics.Vector4(1.0f, 1.0f, 1.0f, 1.0f)
-            )
+        var pointLight = new PointLight(
+            position: puma.Transform.Position + new Vector3(-1, 3, 0),
+            color: new Vector4(1.0f, 1.0f, 1.0f, 1.0f)
         );
+        GI.Instance.LightManager.Add(pointLight.Position, pointLight.Color);
+        GI.Instance.LightManager.Update();
+        GameObjects.Add(pointLight);
 
         GameObjects.Add(s_camera);
         GameObjects.Add(new InsideCube());
 
         var myQuad = new Quad();
-        myQuad.Transform.Position = new System.Numerics.Vector3(0, -InsideCube.HalfSize + 1, 2);
-        myQuad.Transform.Rotation = new System.Numerics.Vector3(1.0f, 0.5f, 0);
+        myQuad.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1, 2);
+        myQuad.Transform.Rotation = new Vector3(1.0f, 0.5f, 0);
         myQuad.Transform.Scale = 2.0f;
 
         GameObjects.Add(myQuad);
-
-        GameObjects.Add(puma);
     }
+
+#if DANCE
+    private static Puma? s_puma;
+#endif
 
     private static void OnUpdate(double deltaTime)
     {
@@ -138,7 +147,19 @@ internal class Program
 
     private static void OnRender(double deltaTime)
     {
+#if DANCE
+        if (s_puma != null)
+        {
+            s_puma.Transforms[1].Rotation += new Vector3(0.0f, 0.025f, 0.0f);
+            s_puma.Transforms[2].Rotation += new Vector3(0.0f, 0.0f, 0.025f);
+            s_puma.Transforms[3].Rotation += new Vector3(0.0f, 0.0f, 0.025f);
+            s_puma.Transforms[4].Rotation += new Vector3(0.025f, 0.0f, 0.0f);
+            s_puma.Transforms[5].Rotation += new Vector3(0.0f, 0.0f, 0.025f);
+        }
+#endif
+
         GI.Instance.LightManager.Clear();
+        s_camera.UpdateAndBindViewProjBuffer();
 
         GI.Instance.Context.ClearRenderTargetView(GI.Instance.RenderTargetView, new Color4(0.1f, 0.1f, 0.1f, 1.0f));
         GI.Instance.Context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);

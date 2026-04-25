@@ -1,5 +1,4 @@
-﻿using System;
-using System.Numerics;
+﻿using System.Numerics;
 
 using GK2PUMA.Graphics;
 
@@ -7,8 +6,10 @@ using Silk.NET.Input;
 
 namespace GK2PUMA.Entities;
 
-public class Camera : Entity
+public class Camera : Entity, IDisposable
 {
+    private readonly ConstantBuffer<ConstantBufferViewProj> _viewProjBuffer = new();
+
     public Vector3 Position;
     public float Pitch;
     public float Yaw;
@@ -132,6 +133,18 @@ public class Camera : Entity
             _projectionDirty = false;
         }
     }
+
+    public void UpdateAndBindViewProjBuffer()
+    {
+        _viewProjBuffer.Update(new ConstantBufferViewProj
+        {
+            View = Matrix4x4.Transpose(ViewMatrix),
+            Projection = Matrix4x4.Transpose(ProjectionMatrix),
+        });
+        _viewProjBuffer.Bind(1);
+    }
+
+    public void Dispose() => _viewProjBuffer.Dispose();
 
     private void UpdateVectors()
     {

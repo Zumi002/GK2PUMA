@@ -1,14 +1,5 @@
-#include "phong.hlsli"
-
-cbuffer ConstantBuffer : register(b0)
-{
-    matrix Model;
-    matrix ModelInvT;
-    matrix View;
-    matrix Projection;
-    float4 SurfaceColor;
-    float4 CameraPos;
-}
+#include "constantBuffers.hlsli"
+#include "blinnPhong.hlsli"
 
 struct VS_INPUT
 {
@@ -24,7 +15,8 @@ PS_INPUT VS(VS_INPUT input)
     output.WorldPos = (float3)worldPos;
     output.Pos = mul(mul(worldPos, View), Projection);
     output.Norm = mul(input.Norm, (float3x3) ModelInvT);
-    output.View = CameraPos.xyz - output.WorldPos;
+    float3 cameraPos = mul((float3x3)View, -View[3].xyz);
+    output.View = cameraPos - output.WorldPos;
 
     return output;
 }

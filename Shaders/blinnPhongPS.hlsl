@@ -1,18 +1,9 @@
-#include "phong.hlsli"
+#include "constantBuffers.hlsli"
+#include "blinnPhong.hlsli"
 
 #define NLIGHTS 2
 
-cbuffer ConstantBuffer : register(b0)
-{
-    matrix Model;
-    matrix ModelInvT;
-    matrix View;
-    matrix Projection;
-    float4 SurfaceColor;
-    float4 CameraPos;
-}
-
-cbuffer LightBuffer : register(b1)
+cbuffer LightBuffer : register(b3)
 {
     float4 LightPos[NLIGHTS];
     float4 LightColor[NLIGHTS];
@@ -21,7 +12,7 @@ cbuffer LightBuffer : register(b1)
 static const float ks = 0.3;
 static const float kd = 0.7;
 static const float ka = 0.1;
-static const float m = 5.0;
+static const float m = 20.0;
 
 float4 phong(float3 worldPos, float3 norm, float3 view)
 {
@@ -32,9 +23,10 @@ float4 phong(float3 worldPos, float3 norm, float3 view)
     {
         float3 lightVec = normalize(LightPos[k].xyz - worldPos);
         float3 halfVec = normalize(view + lightVec);
-        color += LightColor[k] * kd * SurfaceColor.rgb * saturate(dot(norm, lightVec));
-        color += LightColor[k] * ks * pow(saturate(dot(norm, halfVec)), m);
+        color += LightColor[k].xyz * kd * SurfaceColor.rgb * saturate(dot(norm, lightVec));
+        color += LightColor[k].xyz* ks * pow(saturate(dot(norm, halfVec)), m);
     }
+    
     return saturate(float4(color, 1.0f));
 }
 

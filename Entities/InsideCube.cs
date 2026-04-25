@@ -7,10 +7,15 @@ namespace GK2PUMA.Entities;
 public class InsideCube : Entity
 {
     private readonly Mesh _mesh;
-    private readonly ConstantBuffer<ConstantBufferData> _constantBuffer;
+    private readonly ConstantBuffer<ConstantBufferModel> _constantBufferModel;
+    private readonly ConstantBuffer<ConstantBufferSurfaceColor> _constantBufferSurfaceColor;
+    private bool _constantBufferModelIsDirty = true;
 
-    public Matrix4x4 TransformMatrix = Matrix4x4.Identity;
-    public Vector4 Color = new (0.3f, 0.3f, 0.3f, 1.0f);
+    public readonly Transform Transform = new();
+    public Vector4 Color
+    {
+        get;
+    } = new (0.3f, 0.3f, 0.3f, 1.0f);
     public const float HalfSize = 5.0f;
 
     public InsideCube()
@@ -59,25 +64,30 @@ public class InsideCube : Entity
         };
 
         _mesh = new (vertices, indices);
-        _constantBuffer = new ConstantBuffer<ConstantBufferData>();
+        _constantBufferModel = new ConstantBuffer<ConstantBufferModel>();
+        _constantBufferSurfaceColor = new ConstantBuffer<ConstantBufferSurfaceColor>();
+        _constantBufferSurfaceColor.Update(new ConstantBufferSurfaceColor { SurfaceColor = Color });
+        Transform.OnMatricesRecalculated += _ => _constantBufferModelIsDirty = true;
     }
-
+    
     public override void Render(Camera camera)
     {
-        var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.PhongShaderName);
+        var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.BlinnPhong);
         shader.Use();
 
-        Matrix4x4.Invert(TransformMatrix, out var invModel);
-        _constantBuffer.Update(new ConstantBufferData
+        if (_constantBufferModelIsDirty)
         {
-            Model = Matrix4x4.Transpose(TransformMatrix),
-            ModelInvT = invModel,
-            View = Matrix4x4.Transpose(camera.ViewMatrix),
-            Projection = Matrix4x4.Transpose(camera.ProjectionMatrix),
-            SurfaceColor = Color
-        });
-
-        _constantBuffer.Bind(0);
+            _constantBufferModel.Update(new ConstantBufferModel
+            {
+                Model = Matrix4x4.Transpose(Transform.ModelMatrix), 
+                ModelInvT = Transform.InvModelMatrix,
+            });
+            _constantBufferModelIsDirty = false;
+        }
+        
+        _constantBufferModel.Bind(0);
+        _constantBufferSurfaceColor.Bind(2);
+        GI.Instance.LightManager.Bind(3);
         _mesh.Bind();
 
         GI.Instance.Context.DrawIndexed((uint)_mesh.IndexCount, 0, 0);
