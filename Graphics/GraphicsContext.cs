@@ -15,10 +15,11 @@ public class GraphicsContext
     public ID3D11RenderTargetView RenderTargetView { get; set; }
     public ID3D11DepthStencilView DepthStencilView { get; set; }
     public ShaderManager ShaderManager { get; set; } = new ShaderManager();
+    public LightManager LightManager { get; } = new();
 
     public uint Width { get; private set; }
     public uint Height { get; private set; }
-
+    
     private GraphicsContext() { }
     public void Resize(uint width, uint height)
     {

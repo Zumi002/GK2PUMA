@@ -2,11 +2,18 @@
 
 public class ShaderManager
 {
-    private readonly Dictionary<string, Shader> _shaders = new();
-
-    public Shader GetShader(string shaderName)
+    public const string BasePath = "GK2PUMA.Shaders.";
+    public enum ShaderType
     {
-        if (_shaders.TryGetValue(shaderName, out var shader))
+        Unlit,
+        BlinnPhong,
+    }
+    
+    private readonly Dictionary<ShaderType, Shader> _shaders = new();
+
+    public Shader GetShader(ShaderType shaderType)
+    {
+        if (_shaders.TryGetValue(shaderType, out var shader))
         {
             return shader;
         }
@@ -14,9 +21,9 @@ public class ShaderManager
         throw new Exception($"Shader not found");
     }
 
-    public void AddShader(string shaderName, Shader shader)
+    public void AddShader(ShaderType shaderType, Shader shader)
     {
-        _shaders.Add(shaderName, shader);
+        _shaders.Add(shaderType, shader);
     }
 
     public void DisposeAll()

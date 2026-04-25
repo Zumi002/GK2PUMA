@@ -1,4 +1,5 @@
-﻿#include "constantBuffers.hlsli"
+#include "constantBuffers.hlsli"
+#include "blinnPhong.hlsli"
 
 struct VS_INPUT
 {
@@ -6,21 +7,16 @@ struct VS_INPUT
     float3 Norm : NORMAL;
 };
 
-struct PS_INPUT
-{
-    float4 Pos : SV_POSITION;
-    float3 Norm : NORMAL;
-};
-
 PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT) 0;
-    
+
     float4 worldPos = mul(Model, float4(input.Pos, 1.0f));
-    float4 viewPos = mul(View, worldPos);
-    output.Pos = mul(Projection, viewPos);
-    
+    output.WorldPos = (float3)worldPos;
+    output.Pos = mul(Projection, mul(View, worldPos));
     output.Norm = mul(input.Norm, (float3x3) ModelInv);
-    
+    float3 cameraPos = mul(-View[3].xyz, (float3x3)View);
+    output.View = cameraPos - output.WorldPos;
+
     return output;
 }

@@ -7,10 +7,13 @@ namespace GK2PUMA.Entities;
 public class Quad : Entity
 {
     private readonly Mesh _mesh;
-    private readonly ConstantBuffer<ConstantBufferData> _constantBuffer;
+    private readonly ConstantBuffer<ConstantBufferModel> _constantBufferModel;
+    private readonly ConstantBuffer<ConstantBufferSurfaceColor> _constantBufferSurfaceColor;
+    private bool _constantBufferModelIsDirty = true;
 
-    public Transform Transform = new Transform();
+    public readonly Transform Transform = new Transform();
     public Vector4 Color = new Vector4(0.8f, 0.2f, 0.2f, 1.0f);
+
     public Quad()
     {
         var vertices = new Vertex[]
@@ -28,23 +31,31 @@ public class Quad : Entity
         };
 
         _mesh = new Mesh(vertices, indices);
-        _constantBuffer = new ConstantBuffer<ConstantBufferData>();
+        _constantBufferModel = new ConstantBuffer<ConstantBufferModel>();
+        _constantBufferSurfaceColor = new ConstantBuffer<ConstantBufferSurfaceColor>();
+        Transform.OnMatricesRecalculated += _ => _constantBufferModelIsDirty = true;
     }
 
     public override void Render(Camera camera)
     {
-        var shader = GI.Instance.ShaderManager.GetShader("Unlit");
+        var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.BlinnPhong);
         shader.Use();
 
-        _constantBuffer.Update(new ConstantBufferData
+        if (_constantBufferModelIsDirty)
         {
-            Model = Matrix4x4.Transpose(Transform.ModelMatrix),
-            View = Matrix4x4.Transpose(camera.ViewMatrix),
-            Projection = Matrix4x4.Transpose(camera.ProjectionMatrix),
-            SurfaceColor = Color
-        });
+            _constantBufferModel.Update(new ConstantBufferModel
+            {
+                Model = Transform.ModelMatrix, 
+                ModelInv = Transform.InvModelMatrix,
+            });
+            _constantBufferModelIsDirty = false;
+        }
 
-        _constantBuffer.Bind(0);
+        _constantBufferSurfaceColor.Update(new ConstantBufferSurfaceColor { SurfaceColor = Color });
+
+        _constantBufferModel.Bind(0);
+        _constantBufferSurfaceColor.Bind(2);
+        GI.Instance.LightManager.Bind(3);
         _mesh.Bind();
 
         GI.Instance.Context.DrawIndexed((uint)_mesh.IndexCount, 0, 0);

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System.Numerics;
 
 using GK2PUMA.Entities;
 using GK2PUMA.Graphics;
@@ -6,6 +6,7 @@ using GK2PUMA.Graphics;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
+using Silk.NET.Windowing.Glfw;
 
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
@@ -25,7 +26,7 @@ internal class Program
     static void Main(string[] args)
     {
         var options = WindowOptions.Default;
-        Silk.NET.Windowing.Glfw.GlfwWindowing.Use();
+        GlfwWindowing.Use();
         options.API = GraphicsAPI.None;
         options.Size = new Vector2D<int>(1280, 720);
         options.Title = "GK2PUMA";
@@ -68,25 +69,29 @@ internal class Program
             out _,
             out var context);
 
-        GraphicsContext.Instance.Device = device;
-        GraphicsContext.Instance.Context = context;
-        GraphicsContext.Instance.SwapChain = swapChain;
+        GI.Instance.Device = device;
+        GI.Instance.Context = context;
+        GI.Instance.SwapChain = swapChain;
 
-        GraphicsContext.Instance.Resize(width, height);
+        GI.Instance.Resize(width, height);
 
         s_window.Resize += (size) =>
         {
-            GraphicsContext.Instance.Resize((uint)size.X, (uint)size.Y);
+            GI.Instance.Resize((uint)size.X, (uint)size.Y);
         };
 
-        var inputElements = new[]
+        var unlitShaderInputElements = new[]
         {
             new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
             new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 12, 0)
         };
 
-        var unlitShader = new Shader("GK2PUMA.Shaders.unlitVS.hlsl", "GK2PUMA.Shaders.unlitPS.hlsl", inputElements);
-        GraphicsContext.Instance.ShaderManager.AddShader("Unlit", unlitShader);
+        var unlitShader = new Shader($"{ShaderManager.BasePath}unlitVS.hlsl", $"{ShaderManager.BasePath}unlitPS.hlsl",
+            unlitShaderInputElements);
+        var phongShader = new Shader($"{ShaderManager.BasePath}blinnPhongVS.hlsl",
+            $"{ShaderManager.BasePath}blinnPhongPS.hlsl", unlitShaderInputElements);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.Unlit, unlitShader);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.BlinnPhong, phongShader);
 
         var input = s_window.CreateInput();
         s_keyboard = input.Keyboards[0];
@@ -94,12 +99,25 @@ internal class Program
 
         s_camera = new Camera((float)width / height);
 
+        var puma = new Puma();
+        puma.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1, 1);
+        puma.Transform.Rotation = new Vector3(0.0f, 180.0f, 0.0f);
+        GameObjects.Add(puma);
+
+        var pointLight = new PointLight(
+            position: puma.Transform.Position + new Vector3(-1, 3, 0),
+            color: new Vector4(1.0f, 1.0f, 1.0f, 1.0f)
+        );
+        GI.Instance.LightManager.Add(pointLight.Position, pointLight.Color);
+        GI.Instance.LightManager.Update();
+        GameObjects.Add(pointLight);
+
         GameObjects.Add(s_camera);
         GameObjects.Add(new InsideCube());
-        var myQuad = new Quad();
 
-        myQuad.Transform.Position = new System.Numerics.Vector3(0, -1, 2);
-        myQuad.Transform.Rotation = new System.Numerics.Vector3(1.0f, 0.5f, 0);
+        var myQuad = new Quad();
+        myQuad.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1, 2);
+        myQuad.Transform.Rotation = new Vector3(1.0f, 0.5f, 0);
         myQuad.Transform.Scale = 2.0f;
 
         GameObjects.Add(myQuad);
@@ -122,24 +140,33 @@ internal class Program
 
     private static void OnRender(double deltaTime)
     {
-        GraphicsContext.Instance.Context.ClearRenderTargetView(GraphicsContext.Instance.RenderTargetView, new Color4(0.1f, 0.1f, 0.1f, 1.0f));
-        GraphicsContext.Instance.Context.ClearDepthStencilView(GraphicsContext.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
-        GraphicsContext.Instance.Context.OMSetRenderTargets(GraphicsContext.Instance.RenderTargetView, GraphicsContext.Instance.DepthStencilView);
+        GI.Instance.LightManager.Clear();
+        s_camera.UpdateAndBindViewProjBuffer();
+
+        GI.Instance.Context.ClearRenderTargetView(GI.Instance.RenderTargetView, new Color4(0.1f, 0.1f, 0.1f, 1.0f));
+        GI.Instance.Context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
+        GI.Instance.Context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
 
         foreach (var obj in GameObjects)
         {
             obj.Render(s_camera);
         }
 
-        GraphicsContext.Instance.SwapChain.Present(1, PresentFlags.None);
+        GI.Instance.SwapChain.Present(1, PresentFlags.None);
     }
 
     private static void OnClosing()
     {
-        GraphicsContext.Instance.ShaderManager.DisposeAll();
-        GraphicsContext.Instance.RenderTargetView?.Dispose();
-        GraphicsContext.Instance.SwapChain?.Dispose();
-        GraphicsContext.Instance.Context?.Dispose();
-        GraphicsContext.Instance.Device?.Dispose();
+        foreach (var obj in GameObjects)
+        {
+            (obj as IDisposable)?.Dispose();
+        }
+
+        GI.Instance.LightManager.Dispose();
+        GI.Instance.ShaderManager.DisposeAll();
+        GI.Instance.RenderTargetView?.Dispose();
+        GI.Instance.SwapChain?.Dispose();
+        GI.Instance.Context?.Dispose();
+        GI.Instance.Device?.Dispose();
     }
 }
