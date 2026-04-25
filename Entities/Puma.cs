@@ -5,10 +5,14 @@ using System.Numerics;
 using GK2PUMA.Entities.PumaParser;
 using GK2PUMA.Graphics;
 
+using Silk.NET.Input;
+
 namespace GK2PUMA.Entities;
 
 public sealed class Puma : Entity, IDisposable
 {
+    public const float RotationSpeed = 0.01f;
+
     private static readonly Vector3[] PivotPoints =
     [
         new(0.0f, 0.0f, 0.0f),
@@ -96,6 +100,59 @@ public sealed class Puma : Entity, IDisposable
         Transforms[4].Rotation += new Vector3(0.025f, 0.0f, 0.0f);
         Transforms[5].Rotation += new Vector3(0.0f, 0.0f, 0.025f);
 #endif
+    }
+
+    public override void HandleInput(IKeyboard keyboard, IMouse mouse, float dt)
+    {
+        if (keyboard.IsKeyPressed(Key.R))
+        {
+            Transforms[1].Rotation += new Vector3(0.0f, RotationSpeed, 0.0f);
+        }
+        
+        if (keyboard.IsKeyPressed(Key.T))
+        {
+            Transforms[2].Rotation += new Vector3(0.0f, 0.0f, RotationSpeed);
+        }
+        
+        if (keyboard.IsKeyPressed(Key.Y))
+        {
+            Transforms[3].Rotation += new Vector3(0.0f, 0.0f, RotationSpeed);
+        }
+        
+        if (keyboard.IsKeyPressed(Key.U))
+        {
+            Transforms[4].Rotation += new Vector3(RotationSpeed, 0.0f, 0.0f);
+        }
+        
+        if (keyboard.IsKeyPressed(Key.I))
+        {
+            Transforms[5].Rotation += new Vector3(0.0f, 0.0f, RotationSpeed);
+        }
+        
+        if (keyboard.IsKeyPressed(Key.F))
+        {
+            Transforms[1].Rotation -= new Vector3(0.0f, RotationSpeed, 0.0f);
+        }
+        
+        if (keyboard.IsKeyPressed(Key.G))
+        {
+            Transforms[2].Rotation -= new Vector3(0.0f, 0.0f, RotationSpeed);
+        }
+        
+        if (keyboard.IsKeyPressed(Key.H))
+        {
+            Transforms[3].Rotation -= new Vector3(0.0f, 0.0f, RotationSpeed);
+        }
+        
+        if (keyboard.IsKeyPressed(Key.J))
+        {
+            Transforms[4].Rotation -= new Vector3(RotationSpeed, 0.0f, 0.0f);
+        }
+        
+        if (keyboard.IsKeyPressed(Key.K))
+        {
+            Transforms[5].Rotation -= new Vector3(0.0f, 0.0f, RotationSpeed);
+        }
     }
 
     public void Dispose()
