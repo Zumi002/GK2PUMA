@@ -26,7 +26,7 @@ float4 phong(float3 worldPos, float3 norm, float3 view)
         color += LightColor[k].xyz * kd * SurfaceColor.rgb * saturate(dot(norm, lightVec));
         color += LightColor[k].xyz* ks * pow(saturate(dot(norm, halfVec)), m);
     }
-    
+
     return saturate(float4(color, 1.0f));
 }
 

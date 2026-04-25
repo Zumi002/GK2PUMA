@@ -41,7 +41,8 @@ public sealed class PointLight : Entity
         _constantBufferModel = new ConstantBuffer<ConstantBufferModel>();
         _constantBufferModel.Update(new ConstantBufferModel
         {
-            Model = Matrix4x4.Transpose(transform.ModelMatrix), ModelInvT = transform.InvModelMatrix,
+            Model = transform.ModelMatrix, 
+            ModelInvT = Matrix4x4.Transpose(transform.InvModelMatrix),
         });
 
         _constantBufferSurfaceColor = new ConstantBuffer<ConstantBufferSurfaceColor>();

@@ -47,8 +47,8 @@ public class Quad : Entity
         {
             _constantBufferModel.Update(new ConstantBufferModel
             {
-                Model = Matrix4x4.Transpose(Transform.ModelMatrix), 
-                ModelInvT = Transform.InvModelMatrix,
+                Model = Transform.ModelMatrix, 
+                ModelInvT = Matrix4x4.Transpose(Transform.InvModelMatrix),
             });
             _constantBufferModelIsDirty = false;
         }

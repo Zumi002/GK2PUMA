@@ -73,7 +73,8 @@ public sealed class Puma : Entity, IDisposable
             Matrix4x4.Invert(chainedMatrix, out var invChained);
             _constantBufferModel[i].Update(new ConstantBufferModel
             {
-                Model = Matrix4x4.Transpose(chainedMatrix), ModelInvT = invChained,
+                Model = chainedMatrix, 
+                ModelInvT = Matrix4x4.Transpose(invChained),
             });
 
             _constantBufferModel[i].Bind();

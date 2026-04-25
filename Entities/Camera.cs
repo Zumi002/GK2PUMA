@@ -138,8 +138,8 @@ public class Camera : Entity, IDisposable
     {
         _viewProjBuffer.Update(new ConstantBufferViewProj
         {
-            View = Matrix4x4.Transpose(ViewMatrix),
-            Projection = Matrix4x4.Transpose(ProjectionMatrix),
+            View = ViewMatrix,
+            Projection = ProjectionMatrix,
         });
         _viewProjBuffer.Bind(1);
     }
