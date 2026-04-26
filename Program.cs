@@ -99,9 +99,16 @@ internal class Program
 
         s_camera = new Camera((float)width / height);
 
+        var myQuad = new Quad();
+        myQuad.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1.5f, 2);
+        myQuad.Transform.Rotation = new Vector3(1.0f, 0.5f, 0);
+        myQuad.Transform.Scale = 1.0f;
+        GameObjects.Add(myQuad);
+        
         var puma = new Puma();
+        puma.Sheet = myQuad;
         puma.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1, 1);
-        puma.Transform.Rotation = new Vector3(0.0f, 180.0f, 0.0f);
+        puma.Transform.Rotation = new Vector3(0, myQuad.Transform.Rotation.Y, 0);
         GameObjects.Add(puma);
 
         var pointLight = new PointLight(
@@ -115,12 +122,8 @@ internal class Program
         GameObjects.Add(s_camera);
         GameObjects.Add(new InsideCube());
 
-        var myQuad = new Quad();
-        myQuad.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1, 2);
-        myQuad.Transform.Rotation = new Vector3(1.0f, 0.5f, 0);
-        myQuad.Transform.Scale = 2.0f;
-
-        GameObjects.Add(myQuad);
+        // var defaultQuad = new Quad();
+        // GameObjects.Add(defaultQuad);
     }
 
     private static void OnUpdate(double deltaTime)
