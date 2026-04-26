@@ -40,8 +40,8 @@ public sealed class Puma : Entity, IDisposable
 
     private readonly ConstantBuffer<ConstantBufferSurfaceColor> _constantBufferSurfaceColor = new();
 
-    private const float ThetaStep = MathF.PI / 2;
-    private float _radius = 0.2f;
+    public static float ThetaStep = MathF.PI / 2;
+    public float Radius = 0.2f;
     private float _theta;
     private bool _animating;
 
@@ -119,7 +119,7 @@ public sealed class Puma : Entity, IDisposable
                 }
             }
 
-            TrackSheetCircle(_radius, _theta, Sheet);
+            TrackSheetCircle(Radius, _theta, Sheet);
         }
     }
 
