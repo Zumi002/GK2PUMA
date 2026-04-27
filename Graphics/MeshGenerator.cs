@@ -44,4 +44,82 @@ public static class MeshGenerator
 
         return new Mesh(vertices, indices);
     }
+
+    public static Mesh CreateCylinderMesh(uint lidPrecision, uint widthPrecision)
+    {
+        var vertices = new List<Vertex>();
+        var indices = new List<uint>();
+
+        // Unit circle vertices for the cross-section                                                                                                                                                            
+        var unitCircle = new Vector2[lidPrecision + 1];
+        float angleStep = 2 * MathF.PI / lidPrecision;
+        for (int i = 0; i <= lidPrecision; i++)
+        {
+            float theta = i * angleStep;
+            unitCircle[i] = new Vector2(MathF.Cos(theta), MathF.Sin(theta));
+        }
+
+        // Side vertices: stacks along Z from -0.5 to 0.5                                                                                                                                                        
+        for (int i = 0; i <= widthPrecision; i++)
+        {
+            float h = -0.5f + (float)i / widthPrecision;
+            for (int j = 0; j <= lidPrecision; j++)
+            {
+                var position = new Vector3(unitCircle[j].X, unitCircle[j].Y, h);
+                var normal = Vector3.Normalize(new Vector3(unitCircle[j].X, unitCircle[j].Y, 0));
+                vertices.Add(new Vertex(position, normal));
+            }
+        }
+
+        // Side indices                                                                                                                                                                                          
+        for (uint i = 0; i < widthPrecision; i++)
+        {
+            uint k1 = i * (lidPrecision + 1);
+            uint k2 = k1 + lidPrecision + 1;
+            for (uint j = 0; j < lidPrecision; j++)
+            {
+                indices.Add(k1 + j);
+                indices.Add(k1 + j + 1);
+                indices.Add(k2 + j);
+
+                indices.Add(k2 + j);
+                indices.Add(k1 + j + 1);
+                indices.Add(k2 + j + 1);
+            }
+        }
+
+        // Cap vertices and indices (bottom cap i=0: nz=-1, top cap i=1: nz=+1)                                                                                                                                  
+        for (int cap = 0; cap < 2; cap++)
+        {
+            float h = -0.5f + cap;
+            float nz = -1.0f + 2.0f * cap;
+
+            uint centerIndex = (uint)vertices.Count;
+            vertices.Add(new Vertex(new Vector3(0, 0, h), new Vector3(0, 0, nz)));
+            for (int j = 0; j < lidPrecision; j++)
+            {
+                vertices.Add(new Vertex(new Vector3(unitCircle[j].X, unitCircle[j].Y, h), new Vector3(0, 0, nz)));
+            }
+
+            uint ringStart = centerIndex + 1;
+            for (uint i = 0; i < lidPrecision; i++)
+            {
+                uint next = (i + 1) % lidPrecision;
+                if (cap == 0) // bottom: winding so normal faces -Z                                                                                                                                              
+                {
+                    indices.Add(centerIndex);
+                    indices.Add(ringStart + next);
+                    indices.Add(ringStart + i);
+                }
+                else // top: winding so normal faces +Z                                                                                                                                                          
+                {
+                    indices.Add(centerIndex);
+                    indices.Add(ringStart + i);
+                    indices.Add(ringStart + next);
+                }
+            }
+        }
+
+        return new Mesh(vertices, indices);
+    }
 }

@@ -113,8 +113,17 @@ internal class Program
         puma.Transform.Rotation = new Vector3(0, myQuad.Transform.Rotation.Y, 0);
         GameObjects.Add(puma);
 
+        var cylinder = new Cylinder(
+            puma.Transform.Position + new Vector3(2, 0, 0),
+            new Vector4(0.0f, 1.0f, 0.0f, 1.0f)
+        );
+        const float cylinderRadius = 0.45f;
+        cylinder.Transform.Position = cylinder.Transform.Position with { Y = -InsideCube.HalfSize + cylinderRadius };
+        cylinder.Transform.AxisScale = new(cylinderRadius, cylinderRadius, 2.0f);
+        GameObjects.Add(cylinder);
+
         var pointLight = new PointLight(
-            position: puma.Transform.Position + new Vector3(-1, 3, 0),
+            position: puma.Transform.Position + new Vector3(-2, 2, 0),
             color: new Vector4(1.0f, 1.0f, 1.0f, 1.0f)
         );
         GI.Instance.LightManager.Add(pointLight.Position, pointLight.Color);
