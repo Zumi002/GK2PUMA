@@ -102,6 +102,7 @@ internal class Program
             }
         };
         dssDesc.DepthWriteMask = DepthWriteMask.Zero;
+        dssDesc.DepthFunc = ComparisonFunction.LessEqual;
         dssDesc.StencilEnable = true;
         dssDesc.StencilWriteMask = 0xFF;
         dssDesc.FrontFace.StencilPassOp = StencilOperation.Replace;

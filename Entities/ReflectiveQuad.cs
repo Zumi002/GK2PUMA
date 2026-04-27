@@ -3,6 +3,8 @@ using System.Numerics;
 
 using GK2PUMA.Graphics;
 
+using Vortice.Direct3D11;
+
 namespace GK2PUMA.Entities;
 
 public class ReflectiveQuad : Quad
@@ -64,6 +66,7 @@ public class ReflectiveQuad : Quad
         _mesh.Unbind();
         
         // draw the mirrored scene
+        GI.Instance.Context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
         GI.Instance.Context.OMSetDepthStencilState(GI.Instance.DepthStencilStateTest, 1);
         GI.Instance.Context.RSSetState(GI.Instance.RasterizerStateCounterClockWise);
         Matrix4x4 mirror = MirrorTransform.MirrorMatrix;

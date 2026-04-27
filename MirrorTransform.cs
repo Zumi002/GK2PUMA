@@ -39,7 +39,7 @@ public class MirrorTransform
     {
         Vector3 localOrigin = new(0.0f, 0.0f, 0.0f);
         Vector3 worldOrigin = Vector3.Transform(localOrigin, ModelMatrix);
-        Vector3 localNormal = new(0.0f, 1.0f, 0.0f);
+        Vector3 localNormal = new(0.0f, 0.0f, -1.0f);
         Vector3 worldNormal = Vector3.TransformNormal(localNormal, ModelMatrix);
         
         float distance = -Vector3.Dot(worldNormal, worldOrigin);
