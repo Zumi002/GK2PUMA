@@ -143,6 +143,16 @@ public class Camera : Entity, IDisposable
         });
         _viewProjBuffer.Bind(1);
     }
+    
+    public void UpdateAndBindViewProjBuffer(Matrix4x4 view)
+    {
+        _viewProjBuffer.Update(new ConstantBufferViewProj
+        {
+            View = view,
+            Projection = ProjectionMatrix,
+        });
+        _viewProjBuffer.Bind(1);
+    }
 
     public void Dispose() => _viewProjBuffer.Dispose();
 

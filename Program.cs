@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 
 using GK2PUMA.Entities;
 using GK2PUMA.Graphics;
@@ -69,11 +69,70 @@ internal class Program
             out _,
             out var context);
 
+        if (device == null || context == null || swapChain == null)
+        {
+            throw new Exception("Failed to create device.");
+        }
+        
         GI.Instance.Device = device;
         GI.Instance.Context = context;
         GI.Instance.SwapChain = swapChain;
 
+        DepthStencilDescription dssDesc = new()
+        {
+            DepthEnable = true,
+            DepthWriteMask = DepthWriteMask.All,
+            DepthFunc = ComparisonFunction.Less,
+            StencilEnable = false,
+            StencilReadMask = 0xFF,
+            StencilWriteMask = 0xFF,
+            FrontFace = new()
+            {
+                StencilFunc = ComparisonFunction.Always,
+                StencilDepthFailOp = StencilOperation.Keep,
+                StencilPassOp = StencilOperation.Keep,
+                StencilFailOp = StencilOperation.Keep
+            },
+            BackFace = new()
+            {
+                StencilFunc = ComparisonFunction.Always,
+                StencilDepthFailOp = StencilOperation.Keep,
+                StencilPassOp = StencilOperation.Keep,
+                StencilFailOp = StencilOperation.Keep
+            }
+        };
+        dssDesc.DepthWriteMask = DepthWriteMask.Zero;
+        dssDesc.StencilEnable = true;
+        dssDesc.StencilWriteMask = 0xFF;
+        dssDesc.FrontFace.StencilPassOp = StencilOperation.Replace;
+        dssDesc.FrontFace.StencilFunc = ComparisonFunction.Always;
+        GI.Instance.DepthStencilStateWrite = device.CreateDepthStencilState(dssDesc);
+
+        dssDesc.BackFace.StencilFunc = ComparisonFunction.Never;
+        dssDesc.FrontFace.StencilFunc = ComparisonFunction.Equal;
+        // GI.Instance.DepthStencilStateTestNoDepthWrite = device.CreateDepthStencilState(dssDesc)
+        
+        dssDesc.StencilReadMask = 0xFF;
+        dssDesc.BackFace.StencilFunc = ComparisonFunction.Equal;
+        dssDesc.DepthWriteMask = DepthWriteMask.All;
+        GI.Instance.DepthStencilStateTest = device.CreateDepthStencilState(dssDesc);
+        
         GI.Instance.Resize(width, height);
+        
+        RasterizerDescription rasterizerDesc = new()
+        {
+            FillMode = FillMode.Solid,
+            CullMode = CullMode.Back,
+            DepthBias = 0,
+            DepthBiasClamp = 0.0f,
+            SlopeScaledDepthBias = 0.0f,
+            DepthClipEnable = true,
+            ScissorEnable = false,
+            MultisampleEnable = false,
+            AntialiasedLineEnable = false,
+        };
+        rasterizerDesc.FrontCounterClockwise = true;
+        GI.Instance.RasterizerStateCounterClockWise = device.CreateRasterizerState(rasterizerDesc);
 
         s_window.Resize += (size) =>
         {
@@ -99,7 +158,14 @@ internal class Program
 
         s_camera = new Camera((float)width / height);
 
-        var myQuad = new Quad();
+        var myQuad = new ReflectiveQuad();
+        myQuad.RenderScene = () =>
+        {
+            foreach (var obj in GameObjects.Where(obj => obj is not ReflectiveQuad))
+            {
+                obj.Render(s_camera);
+            }
+        };
         myQuad.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1f, 2.5f);
         myQuad.Transform.Rotation = new Vector3(30.0f * MathF.PI / 180, 0.0f, 0);
         myQuad.Transform.Scale = 1.0f;
@@ -142,11 +208,10 @@ internal class Program
 
     private static void OnRender(double deltaTime)
     {
-        GI.Instance.LightManager.Clear();
         s_camera.UpdateAndBindViewProjBuffer();
 
         GI.Instance.Context.ClearRenderTargetView(GI.Instance.RenderTargetView, new Color4(0.1f, 0.1f, 0.1f, 1.0f));
-        GI.Instance.Context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
+        GI.Instance.Context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth | DepthStencilClearFlags.Stencil, 1.0f, 0);
         GI.Instance.Context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
 
         foreach (var obj in GameObjects)
@@ -170,5 +235,8 @@ internal class Program
         GI.Instance.SwapChain?.Dispose();
         GI.Instance.Context?.Dispose();
         GI.Instance.Device?.Dispose();
+        GI.Instance.DepthStencilStateWrite?.Dispose();
+        GI.Instance.DepthStencilStateTest?.Dispose();
+        GI.Instance.RasterizerStateCounterClockWise?.Dispose();
     }
 }

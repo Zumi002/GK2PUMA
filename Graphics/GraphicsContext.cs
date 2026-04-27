@@ -16,6 +16,23 @@ public class GraphicsContext
     public ID3D11DepthStencilView DepthStencilView { get; set; }
     public ShaderManager ShaderManager { get; set; } = new ShaderManager();
     public LightManager LightManager { get; } = new();
+    public ID3D11DepthStencilState DepthStencilStateWrite
+    {
+        get;
+        set;
+    }
+    public ID3D11DepthStencilState DepthStencilStateTest
+    {
+        get;
+        set;
+    }
+
+    public ID3D11RasterizerState RasterizerStateCounterClockWise
+    {
+        get;
+        set;
+    }
+    
 
     public uint Width { get; private set; }
     public uint Height { get; private set; }

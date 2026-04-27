@@ -1,9 +1,15 @@
-﻿using System.Numerics;
+using System.Numerics;
 
 namespace GK2PUMA;
 
 public class Transform
 {
+    public Transform()
+    {
+        OnMadeDirty += _ => _isDirty = true;
+        OnMatricesRecalculated += _ => _isDirty = false;
+    }
+    
     private Vector3 _position = Vector3.Zero;
     private Vector3 _rotation = Vector3.Zero;
     private float _scale = 1.0f;
@@ -24,7 +30,7 @@ public class Transform
             if (_position != value)
             {
                 _position = value;
-                _isDirty = true;
+                OnMadeDirty.Invoke(this);
             }
         }
     }
@@ -41,7 +47,7 @@ public class Transform
             if (_rotation != value)
             {
                 _rotation = value;
-                _isDirty = true;
+                OnMadeDirty.Invoke(this);
             }
         }
     }
@@ -58,7 +64,7 @@ public class Transform
             if (Math.Abs(value - _scale) > 0.001f)
             {
                 _scale = value;
-                _isDirty = true;
+                OnMadeDirty.Invoke(this);
             }
         }
     }
@@ -91,17 +97,22 @@ public class Transform
 
     public delegate void MatricesRecalculated(Transform transform);
 
+    public delegate void MadeDirty(Transform transform);
+
     public event MatricesRecalculated? OnMatricesRecalculated = delegate
+    {
+    };
+
+    public event MadeDirty OnMadeDirty = delegate
     {
     };
 
     private void RecacheMatrices()
     {
-        _isDirty = false;
         _modelMatrix = Matrix4x4.CreateScale(Scale) *
                        Matrix4x4.CreateFromYawPitchRoll(Rotation.Y, Rotation.X, Rotation.Z) *
                        Matrix4x4.CreateTranslation(Position);
-        Matrix4x4.Invert(ModelMatrix, out _invModelMatrix);
+        Matrix4x4.Invert(_modelMatrix, out _invModelMatrix);
         OnMatricesRecalculated?.Invoke(this);
     }
 }

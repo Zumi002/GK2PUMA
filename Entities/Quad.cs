@@ -6,22 +6,25 @@ namespace GK2PUMA.Entities;
 
 public class Quad : Entity
 {
-    private readonly Mesh _mesh;
-    private readonly ConstantBuffer<ConstantBufferModel> _constantBufferModel;
-    private readonly ConstantBuffer<ConstantBufferSurfaceColor> _constantBufferSurfaceColor;
-    private bool _constantBufferModelIsDirty = true;
+    protected readonly Mesh _mesh;
+    protected readonly ConstantBuffer<ConstantBufferModel> _constantBufferModel;
+    protected readonly ConstantBuffer<ConstantBufferSurfaceColor> _constantBufferSurfaceColor;
+    protected bool _constantBufferModelIsDirty = true;
 
-    public readonly Transform Transform = new Transform();
-    public Vector4 Color = new Vector4(0.8f, 0.2f, 0.2f, 1.0f);
+    public readonly Transform Transform = new();
+    public Vector4 Color
+    {
+        get;
+    } = new(0.8f, 0.2f, 0.2f, 1.0f);
 
     public Quad()
     {
         var vertices = new Vertex[]
         {
-            new Vertex(new Vector3(-1, -1, 0), new Vector3(0, 0, -1)),
-            new Vertex(new Vector3(-1,  1, 0), new Vector3(0, 0, -1)),
-            new Vertex(new Vector3( 1,  1, 0), new Vector3(0, 0, -1)),
-            new Vertex(new Vector3( 1, -1, 0), new Vector3(0, 0, -1))
+            new(new Vector3(-1, -1, 0), new Vector3(0, 0, -1)),
+            new(new Vector3(-1,  1, 0), new Vector3(0, 0, -1)),
+            new(new Vector3( 1,  1, 0), new Vector3(0, 0, -1)),
+            new(new Vector3( 1, -1, 0), new Vector3(0, 0, -1))
         };
 
         var indices = new uint[]
@@ -33,6 +36,7 @@ public class Quad : Entity
         _mesh = new Mesh(vertices, indices);
         _constantBufferModel = new ConstantBuffer<ConstantBufferModel>();
         _constantBufferSurfaceColor = new ConstantBuffer<ConstantBufferSurfaceColor>();
+        _constantBufferSurfaceColor.Update(new ConstantBufferSurfaceColor { SurfaceColor = Color });
         Transform.OnMatricesRecalculated += _ => _constantBufferModelIsDirty = true;
     }
 
@@ -51,9 +55,7 @@ public class Quad : Entity
             _constantBufferModelIsDirty = false;
         }
 
-        _constantBufferSurfaceColor.Update(new ConstantBufferSurfaceColor { SurfaceColor = Color });
-
-        _constantBufferModel.Bind(0);
+        _constantBufferModel.Bind();
         _constantBufferSurfaceColor.Bind(2);
         GI.Instance.LightManager.Bind(3);
         _mesh.Bind();
