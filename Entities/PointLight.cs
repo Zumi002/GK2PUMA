@@ -53,15 +53,15 @@ public sealed class PointLight : Entity
 #if DEBUG
     public override void Render(Camera camera)
     {
-        var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.Unlit);
-        shader.Use();
+        //var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.Unlit);
+        //shader.Use();
 
-        _constantBufferModel.Bind();
-        _constantBufferSurfaceColor.Bind(2);
+        //_constantBufferModel.Bind();
+        //_constantBufferSurfaceColor.Bind(2);
 
-        _mesh.Bind();
-        GI.Instance.Context.DrawIndexed((uint)_mesh.IndexCount, 0, 0);
-        _mesh.Unbind();
+        //_mesh.Bind();
+        //GI.Instance.Context.DrawIndexed((uint)_mesh.IndexCount, 0, 0);
+        //_mesh.Unbind();
     }
 
     public void Dispose()

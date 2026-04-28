@@ -80,6 +80,8 @@ internal class Program
             GI.Instance.Resize((uint)size.X, (uint)size.Y);
         };
 
+        GI.Instance.Pipeline.Init();
+
         var unlitShaderInputElements = new[]
         {
             new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
@@ -90,8 +92,22 @@ internal class Program
             unlitShaderInputElements);
         var phongShader = new Shader($"{ShaderManager.BasePath}blinnPhongVS.hlsl",
             $"{ShaderManager.BasePath}blinnPhongPS.hlsl", unlitShaderInputElements);
+        var gpassShader = new Shader($"{ShaderManager.BasePath}gPassVS.hlsl",
+            $"{ShaderManager.BasePath}gPassPS.hlsl", unlitShaderInputElements);
+        var lightPassShader = new Shader($"{ShaderManager.BasePath}lightPassVS.hlsl",
+            $"{ShaderManager.BasePath}lightPassPS.hlsl", []);
+        var shadowVolumeShader = new Shader(
+            $"{ShaderManager.BasePath}shadowVolumeVS.hlsl",
+            null,
+            unlitShaderInputElements,
+            $"{ShaderManager.BasePath}shadowVolumeGS.hlsl"
+        );
+
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.Unlit, unlitShader);
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.BlinnPhong, phongShader);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.GPass, gpassShader);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.LightPass, lightPassShader);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.ShadowVolume, shadowVolumeShader);
 
         var input = s_window.CreateInput();
         s_keyboard = input.Keyboards[0];
@@ -153,6 +169,8 @@ internal class Program
         {
             obj.Render(s_camera);
         }
+
+        GI.Instance.Pipeline.Execute(s_camera);
 
         GI.Instance.SwapChain.Present(1, PresentFlags.None);
     }
