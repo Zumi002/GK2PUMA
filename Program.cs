@@ -78,29 +78,7 @@ internal class Program
         GI.Instance.Context = context;
         GI.Instance.SwapChain = swapChain;
 
-        DepthStencilDescription dssDesc = new()
-        {
-            DepthEnable = true,
-            DepthWriteMask = DepthWriteMask.All,
-            DepthFunc = ComparisonFunction.Less,
-            StencilEnable = false,
-            StencilReadMask = 0xFF,
-            StencilWriteMask = 0xFF,
-            FrontFace = new()
-            {
-                StencilFunc = ComparisonFunction.Always,
-                StencilDepthFailOp = StencilOperation.Keep,
-                StencilPassOp = StencilOperation.Keep,
-                StencilFailOp = StencilOperation.Keep
-            },
-            BackFace = new()
-            {
-                StencilFunc = ComparisonFunction.Always,
-                StencilDepthFailOp = StencilOperation.Keep,
-                StencilPassOp = StencilOperation.Keep,
-                StencilFailOp = StencilOperation.Keep
-            }
-        };
+        var dssDesc = Descriptions.NewDepthStencilDescription();
         dssDesc.DepthWriteMask = DepthWriteMask.Zero;
         dssDesc.DepthFunc = ComparisonFunction.LessEqual;
         dssDesc.StencilEnable = true;
@@ -109,7 +87,7 @@ internal class Program
         dssDesc.FrontFace.StencilFunc = ComparisonFunction.Always;
         GI.Instance.DepthStencilStateWrite = device.CreateDepthStencilState(dssDesc);
 
-        dssDesc.BackFace.StencilFunc = ComparisonFunction.Never;
+        // dssDesc.BackFace.StencilFunc = ComparisonFunction.Never;
         dssDesc.FrontFace.StencilFunc = ComparisonFunction.Equal;
         // GI.Instance.DepthStencilStateTestNoDepthWrite = device.CreateDepthStencilState(dssDesc)
         
@@ -120,22 +98,18 @@ internal class Program
         
         GI.Instance.Resize(width, height);
         
-        RasterizerDescription rasterizerDesc = new()
-        {
-            FillMode = FillMode.Solid,
-            CullMode = CullMode.Back,
-            DepthBias = 0,
-            DepthBiasClamp = 0.0f,
-            SlopeScaledDepthBias = 0.0f,
-            DepthClipEnable = true,
-            ScissorEnable = false,
-            MultisampleEnable = false,
-            AntialiasedLineEnable = false,
-        };
+        var rasterizerDesc = Descriptions.NewRasterizerDescription();
         rasterizerDesc.FrontCounterClockwise = true;
         GI.Instance.RasterizerStateCounterClockWise = device.CreateRasterizerState(rasterizerDesc);
-
-        s_window.Resize += (size) =>
+        
+        var bsDesc = Descriptions.NewBlendDescription();
+        bsDesc.RenderTarget[0].BlendEnable = true;
+        bsDesc.RenderTarget[0].SourceBlend = Blend.SourceAlpha;
+        bsDesc.RenderTarget[0].DestinationBlend = Blend.InverseSourceAlpha;
+        bsDesc.RenderTarget[0].BlendOperation = BlendOperation.Add;
+        GI.Instance.BlendStateAlpha = device.CreateBlendState(bsDesc);
+        
+        s_window.Resize += size =>
         {
             GI.Instance.Resize((uint)size.X, (uint)size.Y);
         };
@@ -239,5 +213,6 @@ internal class Program
         GI.Instance.DepthStencilStateWrite?.Dispose();
         GI.Instance.DepthStencilStateTest?.Dispose();
         GI.Instance.RasterizerStateCounterClockWise?.Dispose();
+        GI.Instance.BlendStateAlpha?.Dispose();
     }
 }

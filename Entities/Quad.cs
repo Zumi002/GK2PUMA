@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 
 using GK2PUMA.Graphics;
 
@@ -15,7 +15,7 @@ public class Quad : Entity
     public Vector4 Color
     {
         get;
-    } = new(0.8f, 0.2f, 0.2f, 1.0f);
+    } = new(0.8f, 0.8f, 0.8f, 0.25f);
 
     public Quad()
     {

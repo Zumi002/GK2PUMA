@@ -32,6 +32,12 @@ public class GraphicsContext
         get;
         set;
     }
+
+    public ID3D11BlendState BlendStateAlpha
+    {
+        get;
+        set;
+    }
     
 
     public uint Width { get; private set; }

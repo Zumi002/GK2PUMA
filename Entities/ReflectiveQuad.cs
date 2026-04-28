@@ -32,15 +32,24 @@ public class ReflectiveQuad : Quad
         }
 
         _constantBufferSurfaceColor.Update(new ConstantBufferSurfaceColor { SurfaceColor = Color });
+        
+        DrawReflectedScene(camera);
+        GI.Instance.Context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
 
-        _constantBufferModel.Bind(0);
+        unsafe
+        {
+            GI.Instance.Context.OMSetBlendState(GI.Instance.BlendStateAlpha, null, 0xFFFFFFFF);
+        }
+        _constantBufferModel.Bind();
         _constantBufferSurfaceColor.Bind(2);
         GI.Instance.LightManager.Bind(3);
         _mesh.Bind();
         GI.Instance.Context.DrawIndexed((uint)_mesh.IndexCount, 0, 0);
         _mesh.Unbind();
-        
-        DrawReflectedScene(camera);
+        unsafe
+        {
+            GI.Instance.Context.OMSetBlendState(null, null, 0xFFFFFFFF);
+        }
     }
 
     private void DrawReflectedScene(Camera camera)
@@ -74,6 +83,7 @@ public class ReflectiveQuad : Quad
         camera.UpdateAndBindViewProjBuffer(modifiedView);
         RenderScene.Invoke();
 
+        // reset the stencil buffer
         _constantBufferSurfaceColor.Update(new ConstantBufferSurfaceColor
         {
             SurfaceColor = Color,
