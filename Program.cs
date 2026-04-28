@@ -169,10 +169,6 @@ internal class Program
         GI.Instance.LightManager.Clear();
         s_camera.UpdateAndBindViewProjBuffer();
 
-        GI.Instance.Context.ClearRenderTargetView(GI.Instance.RenderTargetView, new Color4(0.1f, 0.1f, 0.1f, 1.0f));
-        GI.Instance.Context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
-        GI.Instance.Context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
-
         foreach (var obj in GameObjects)
         {
             obj.Render(s_camera);

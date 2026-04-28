@@ -17,6 +17,13 @@ struct PS_INPUT
     float2 TexCoord : TEXCOORD0;
 };
 
+//https://www.shadertoy.com/view/4djSRW
+float GetDitherNoise(float2 p)
+{
+    float x = sin(dot(p, float2(12.9898, 78.233))) * 43758.5453;
+    return x - floor(x);
+}
+
 float4 PS(PS_INPUT input) : SV_Target
 {
     float4 albedoData = ColorMap.Sample(Sampler, input.TexCoord);
@@ -43,5 +50,9 @@ float4 PS(PS_INPUT input) : SV_Target
         color += LightColor[k].xyz * kd * albedo * saturate(dot(normal, lightVec));
         color += LightColor[k].xyz * ks * pow(saturate(dot(normal, halfVec)), m);
     }
+    float dither = GetDitherNoise(input.Pos.xy) - 0.5f;
+    
+    color += dither * (1.0f / 255.0f);
+    
     return float4(color, 1.0f);
 }

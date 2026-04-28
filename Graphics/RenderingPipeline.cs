@@ -221,8 +221,6 @@ public class RenderingPipeline
     {
         var context = GI.Instance.Context;
 
-        ClearBuffers(context);
-
         foreach (var mirrorCommand in _mirrors)
         {
             context.ClearDepthStencilView(
@@ -239,6 +237,7 @@ public class RenderingPipeline
             RenderMirrorGPass(context, _mirrorCamera);
             RenderMirrorShadowVolume(context, _mirrorCamera);
             RenderMirrorLightPass(context, _mirrorCamera);
+            RenderMirrorParticles(context, _mirrorCamera);
         }
 
         context.ClearDepthStencilView(
@@ -257,10 +256,6 @@ public class RenderingPipeline
         ClearQueues();
     }
 
-    private void ClearBuffers(ID3D11DeviceContext context)
-    {
-    }
-
     private void RenderMirrorStencilPass(ID3D11DeviceContext context, Camera mainCamera, MirrorCommand mirrorCommand)
     {
 
@@ -268,14 +263,22 @@ public class RenderingPipeline
 
     private void RenderMirrorGPass(ID3D11DeviceContext context, Camera mirrorCamera)
     {
+
     }
 
     private void RenderMirrorShadowVolume(ID3D11DeviceContext context, Camera mirrorCamera)
     {
+
     }
 
     private void RenderMirrorLightPass(ID3D11DeviceContext context, Camera mirrorCamera)
     {
+
+    }
+
+    private void RenderMirrorParticles(ID3D11DeviceContext context, Camera mirrorCamera)
+    {
+    
     }
 
     private void RenderGPass(ID3D11DeviceContext context, Camera camera)
