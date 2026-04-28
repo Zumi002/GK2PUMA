@@ -61,6 +61,10 @@ public class ReflectiveQuad : Quad
         }
        
         // set up the stencil buffer for mirror drawing
+        unsafe
+        {
+            GI.Instance.Context.OMSetBlendState(GI.Instance.BlendStateNoColor, null, 0xFFFFFFFF);
+        }
         GI.Instance.Context.OMSetDepthStencilState(GI.Instance.DepthStencilStateWrite, 1);
         Vector4 white = new(1, 1, 1, 1);
         _constantBufferSurfaceColor.Update(new ConstantBufferSurfaceColor
@@ -73,6 +77,10 @@ public class ReflectiveQuad : Quad
         _mesh.Bind();
         GI.Instance.Context.DrawIndexed((uint)_mesh.IndexCount, 0, 0);
         _mesh.Unbind();
+        unsafe
+        {
+            GI.Instance.Context.OMSetBlendState(null, null, 0xFFFFFFFF);
+        }
         
         // draw the mirrored scene
         GI.Instance.Context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);

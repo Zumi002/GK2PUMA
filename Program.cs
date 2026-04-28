@@ -103,6 +103,10 @@ internal class Program
         GI.Instance.RasterizerStateCounterClockWise = device.CreateRasterizerState(rasterizerDesc);
         
         var bsDesc = Descriptions.NewBlendDescription();
+        bsDesc.RenderTarget[0].RenderTargetWriteMask = ColorWriteEnable.None;
+        GI.Instance.BlendStateNoColor = device.CreateBlendState(bsDesc);
+        
+        bsDesc.RenderTarget[0].RenderTargetWriteMask = ColorWriteEnable.All;
         bsDesc.RenderTarget[0].BlendEnable = true;
         bsDesc.RenderTarget[0].SourceBlend = Blend.SourceAlpha;
         bsDesc.RenderTarget[0].DestinationBlend = Blend.InverseSourceAlpha;
@@ -133,17 +137,21 @@ internal class Program
 
         s_camera = new Camera((float)width / height);
 
-        var myQuad = new ReflectiveQuad();
-        myQuad.RenderScene = () =>
-        {
-            foreach (var obj in GameObjects.Where(obj => obj is not ReflectiveQuad))
+        var myQuad = new ReflectiveQuad { 
+            RenderScene = () =>
             {
-                obj.Render(s_camera);
+                foreach (var obj in GameObjects.Where(obj => obj is not ReflectiveQuad))
+                {
+                    obj.Render(s_camera);
+                }
+            },
+            Transform =
+            {
+                Position = new Vector3(0, -InsideCube.HalfSize + 1f, 2.5f),
+                Rotation = new Vector3(30.0f * MathF.PI / 180, 0.0f, 0),
+                Scale = 1.0f
             }
         };
-        myQuad.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1f, 2.5f);
-        myQuad.Transform.Rotation = new Vector3(30.0f * MathF.PI / 180, 0.0f, 0);
-        myQuad.Transform.Scale = 1.0f;
         GameObjects.Add(myQuad);
 
         Puma.ThetaStep = MathF.PI / 2;
@@ -214,5 +222,6 @@ internal class Program
         GI.Instance.DepthStencilStateTest?.Dispose();
         GI.Instance.RasterizerStateCounterClockWise?.Dispose();
         GI.Instance.BlendStateAlpha?.Dispose();
+        GI.Instance.BlendStateNoColor?.Dispose();
     }
 }
