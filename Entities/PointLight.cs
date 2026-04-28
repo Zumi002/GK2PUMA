@@ -2,12 +2,10 @@ using System.Numerics;
 
 using GK2PUMA.Graphics;
 
+using Silk.NET.Input;
+
 namespace GK2PUMA.Entities;
 
-/// <summary>
-/// A point light source.
-/// <remarks>Rendered in debug mode to visualize its position in the scene.</remarks> 
-/// </summary>
 public sealed class PointLight : Entity
 #if DEBUG
     , IDisposable
@@ -53,15 +51,12 @@ public sealed class PointLight : Entity
 #if DEBUG
     public override void Render(Camera camera)
     {
-        //var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.Unlit);
-        //shader.Use();
-
-        //_constantBufferModel.Bind();
-        //_constantBufferSurfaceColor.Bind(2);
-
-        //_mesh.Bind();
-        //GI.Instance.Context.DrawIndexed((uint)_mesh.IndexCount, 0, 0);
-        //_mesh.Unbind();
+        Transform transform = new()
+        {
+            Position = Position,
+            Scale = 0.05f
+        };
+        GI.Instance.Pipeline.SubmitOpaque(_mesh, transform.ModelMatrix, transform.InvModelMatrix, Color, castsShadows: false);
     }
 
     public void Dispose()

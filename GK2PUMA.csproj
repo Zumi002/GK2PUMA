@@ -11,8 +11,10 @@
   <ItemGroup>
     <None Remove="Shaders\gPass.hlsli" />
     <None Remove="Shaders\gPassPS.hlsl" />
+    <None Remove="Shaders\lighting.hlsli" />
     <None Remove="Shaders\lightPassPS.hlsl" />
     <None Remove="Shaders\lightPassVS.hlsl" />
+    <None Remove="Shaders\shadowVolume.hlsli" />
     <None Remove="Shaders\shadowVolumeGS.hlsl" />
     <None Remove="Shaders\shadowVolumeVS.hlsl" />
     <None Remove="Shaders\unlitPS.hlsl" />
@@ -27,8 +29,10 @@
     <EmbeddedResource Include="Shaders\gPass.hlsli" />
     <EmbeddedResource Include="Shaders\gPassPS.hlsl" />
     <EmbeddedResource Include="Shaders\gPassVS.hlsl" />
+    <EmbeddedResource Include="Shaders\lighting.hlsli" />
     <EmbeddedResource Include="Shaders\lightPassPS.hlsl" />
     <EmbeddedResource Include="Shaders\lightPassVS.hlsl" />
+    <EmbeddedResource Include="Shaders\shadowVolume.hlsli" />
     <EmbeddedResource Include="Shaders\shadowVolumeGS.hlsl" />
     <EmbeddedResource Include="Shaders\shadowVolumeVS.hlsl" />
     <EmbeddedResource Include="Shaders\unlitPS.hlsl" />
@@ -37,6 +41,10 @@
 
   <ItemGroup>
     <Content Include="Meshes\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Shaders\ambientPassPS.hlsl" />
   </ItemGroup>
 
   <ItemGroup>

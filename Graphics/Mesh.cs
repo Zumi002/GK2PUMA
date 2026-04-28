@@ -21,27 +21,40 @@ public class Mesh : IDisposable
 {
     public ID3D11Buffer VertexBuffer { get; private set; }
     public ID3D11Buffer IndexBuffer { get; private set; }
-    public int IndexCount { get; private set; }
+    public ID3D11Buffer? AdjacencyIndexBuffer { get; private set; }
 
-    public Mesh(IEnumerable<Vertex> vertices, IEnumerable<uint> indices)
+    public int IndexCount { get; private set; }
+    public int AdjacencyIndexCount { get; }
+
+    public Mesh(Vertex[] vertices, uint[] indices, uint[]? adjacencyIndices = null)
     {
         var device = GI.Instance.Device;
 
-        var vArray = vertices.ToArray();
-        var iArray = indices.ToArray();
+        VertexBuffer = device.CreateBuffer(vertices, BindFlags.VertexBuffer);
+        IndexBuffer = device.CreateBuffer(indices, BindFlags.IndexBuffer);
+        IndexCount = indices.Length;
 
-        VertexBuffer = device.CreateBuffer(vArray, BindFlags.VertexBuffer);
-        IndexBuffer = device.CreateBuffer(iArray, BindFlags.IndexBuffer);
-        IndexCount = iArray.Length;
+        if (adjacencyIndices != null && adjacencyIndices.Length > 0)
+        {
+            AdjacencyIndexBuffer = device.CreateBuffer(adjacencyIndices, BindFlags.IndexBuffer);
+            AdjacencyIndexCount = adjacencyIndices.Length;
+        }
     }
 
-    public void Bind()
+    public void Bind(bool useAdjacency = false)
     {
         var context = GI.Instance.Context;
 
         context.IASetVertexBuffer(0, VertexBuffer, 24, 0);
-        context.IASetIndexBuffer(IndexBuffer, Vortice.DXGI.Format.R32_UInt, 0);
-        context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+
+        if (useAdjacency && AdjacencyIndexBuffer != null)
+        {
+            context.IASetIndexBuffer(AdjacencyIndexBuffer, Vortice.DXGI.Format.R32_UInt, 0);
+        }
+        else
+        {
+            context.IASetIndexBuffer(IndexBuffer, Vortice.DXGI.Format.R32_UInt, 0);
+        }
     }
 
     public void Unbind()

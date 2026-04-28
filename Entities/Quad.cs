@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 
 using GK2PUMA.Graphics;
+using GK2PUMA.Rendering;
 
 namespace GK2PUMA.Entities;
 
@@ -19,7 +20,7 @@ public class Quad : Entity
             new Vertex(new Vector3(-1,  1, 0), new Vector3(0, 0, -1)),
             new Vertex(new Vector3( 1,  1, 0), new Vector3(0, 0, -1)),
             new Vertex(new Vector3( 1, -1, 0), new Vector3(0, 0, -1)),
-             new Vertex(new Vector3(-1, -1, 0), new Vector3(0, 0, 1)),
+            new Vertex(new Vector3(-1, -1, 0), new Vector3(0, 0, 1)),
             new Vertex(new Vector3(-1,  1, 0), new Vector3(0, 0, 1)),
             new Vertex(new Vector3( 1,  1, 0), new Vector3(0, 0, 1)),
             new Vertex(new Vector3( 1, -1, 0), new Vector3(0, 0, 1))
@@ -28,12 +29,12 @@ public class Quad : Entity
         var indices = new uint[]
         {
             0, 1, 2,
-            //0, 2, 3,
-            //4, 6, 5,
-            //4, 7, 6,
+            0, 2, 3,
+            4, 6, 5,
+            4, 7, 6,
         };
-
-        _mesh = new Mesh(vertices, indices);
+        var adjIndices = AdjacencyHelper.Build(vertices, indices);
+        _mesh = new Mesh(vertices, indices, adjIndices);
     }
 
     public override void Render(Camera camera)

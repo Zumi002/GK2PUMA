@@ -53,6 +53,7 @@ public class RenderingPipeline
     private ID3D11DepthStencilState? _lightPassDepthState;
     private ID3D11RasterizerState? _cullNoneState;
     private ID3D11BlendState? _noColorWriteBlendState;
+    private ID3D11BlendState? _additiveBlendState;
 
     private Camera? _mirrorCamera;
 
@@ -99,7 +100,7 @@ public class RenderingPipeline
         {
             DepthEnable = true,
             DepthWriteMask = DepthWriteMask.Zero,
-            DepthFunc = ComparisonFunction.LessEqual,
+            DepthFunc = ComparisonFunction.Less,
             StencilEnable = true,
             StencilReadMask = 0xFF,
             StencilWriteMask = 0xFF,
@@ -157,6 +158,20 @@ public class RenderingPipeline
             }
         };
         _lightPassDepthState = device.CreateDepthStencilState(lightPassDepthDesc);
+
+        var additiveBlendDesc = new BlendDescription();
+        additiveBlendDesc.RenderTarget[0] = new RenderTargetBlendDescription
+        {
+            BlendEnable = true,
+            SourceBlend = Blend.One,
+            DestinationBlend = Blend.One,
+            BlendOperation = BlendOperation.Add,
+            SourceBlendAlpha = Blend.Zero,
+            DestinationBlendAlpha = Blend.One,
+            BlendOperationAlpha = BlendOperation.Add,
+            RenderTargetWriteMask = ColorWriteEnable.All
+        };
+        _additiveBlendState = device.CreateBlendState(additiveBlendDesc);
 
         _cullFrontState = device.CreateRasterizerState(cullFrontDesc);
         _modelBuffer = new();
@@ -233,9 +248,9 @@ public class RenderingPipeline
             0
         );
 
-        RenderMainGPass(context, mainCamera);
-        RenderMainShadowVolume(context, mainCamera);
-        RenderMainLightPass(context, mainCamera);
+        RenderGPass(context, mainCamera);
+        RenderShadowVolume(context, mainCamera);
+        RenderLightPass(context, mainCamera);
 
         RenderParticles(context, mainCamera);
 
@@ -263,7 +278,7 @@ public class RenderingPipeline
     {
     }
 
-    private void RenderMainGPass(ID3D11DeviceContext context, Camera camera)
+    private void RenderGPass(ID3D11DeviceContext context, Camera camera)
     {
         context.RSSetState(_cullBackState);
         context.OMSetDepthStencilState(_defaultDepthState, 0);
@@ -281,7 +296,7 @@ public class RenderingPipeline
 
         _modelBuffer.Bind(0);
         _colorBuffer.Bind(2);
-
+        context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
         foreach (var cmd in _opaques)
         {
             _modelBuffer.Update(new ConstantBufferModel
@@ -305,30 +320,41 @@ public class RenderingPipeline
         }
     }
 
-    private void RenderMainLightPass(ID3D11DeviceContext context, Camera camera)
+    private void RenderLightPass(ID3D11DeviceContext context, Camera camera)
     {
         context.RSSetState(_cullBackState);
-        context.OMSetDepthStencilState(_lightPassDepthState, 0);
+        context.OMSetDepthStencilState(_noDepthState, 0);
+        context.OMSetBlendState(null); 
 
-        context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
-
+        context.OMSetRenderTargets(GI.Instance.RenderTargetView, null);
         context.ClearRenderTargetView(GI.Instance.RenderTargetView, new Color4(0.1f, 0.1f, 0.1f, 1.0f));
 
-        var lightPassShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.LightPass);
-        lightPassShader.Use();
+        var ambientShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.AmbientPass);
+        ambientShader.Use();
 
         context.PSSetShaderResources(0, GI.Instance.GBufferSRVs);
         context.PSSetSamplers(0, new[] { GI.Instance.DefaultSampler });
 
-        GI.Instance.LightManager.Bind(3);
-
         context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         context.Draw(3, 0);
 
+        context.OMSetDepthStencilState(_lightPassDepthState, 0);
+        context.OMSetBlendState(_additiveBlendState);
+
+        context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
+
+        var lightPassShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.LightPass);
+        lightPassShader.Use();
+
+        GI.Instance.LightManager.Bind(3);
+
+        context.Draw(3, 0);
+
         context.PSSetShaderResources(0, new ID3D11ShaderResourceView[] { null, null, null });
+        context.OMSetBlendState(null);
     }
 
-    private void RenderMainShadowVolume(ID3D11DeviceContext context, Camera camera)
+    private void RenderShadowVolume(ID3D11DeviceContext context, Camera camera)
     {
         context.RSSetState(_cullNoneState);
         context.OMSetDepthStencilState(_shadowVolumeDepthState, 0);
@@ -342,7 +368,7 @@ public class RenderingPipeline
         _modelBuffer.Bind(0);
         GI.Instance.LightManager.Bind(3);
 
-        context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
+        context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleListAdjacency);
 
         foreach (var cmd in _opaques)
         {
@@ -353,12 +379,12 @@ public class RenderingPipeline
 
             _modelBuffer.Update(new ConstantBufferModel
             {
-                Model = Matrix4x4.Transpose(cmd.Transform),
-                ModelInv = cmd.Transform
+                Model = cmd.Transform,
+                ModelInv = cmd.InvTransform
             });
 
-            cmd.Mesh.Bind();
-            context.DrawIndexed((uint)cmd.Mesh.IndexCount, 0, 0);
+            cmd.Mesh.Bind(useAdjacency: true);
+            context.DrawIndexed((uint)cmd.Mesh.AdjacencyIndexCount, 0, 0);
         }
 
         foreach (var cmd in _mirrors)
@@ -370,13 +396,80 @@ public class RenderingPipeline
 
             _modelBuffer.Update(new ConstantBufferModel
             {
-                Model = Matrix4x4.Transpose(cmd.Transform),
-                ModelInv = cmd.Transform
+                Model = cmd.Transform,
+                ModelInv = cmd.InvTransform
             });
 
-            cmd.Mesh.Bind();
-            context.DrawIndexed((uint)cmd.Mesh.IndexCount, 0, 0);
+            cmd.Mesh.Bind(useAdjacency: true);
+            context.DrawIndexed((uint)cmd.Mesh.AdjacencyIndexCount, 0, 0);
         }
+
+        context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
+        context.OMSetBlendState(null);
+    }
+
+    private void RenderShadowVolumeDEBUG(ID3D11DeviceContext context, Camera camera)
+    {
+        context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
+        context.OMSetBlendState(_additiveBlendState);
+        context.OMSetDepthStencilState(_defaultDepthState, 0);
+
+        var shadowShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.ShadowVolume);
+        shadowShader.Use();
+
+        _modelBuffer.Bind(0);
+        _colorBuffer.Bind(2);
+        GI.Instance.LightManager.Bind(3);
+
+        context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleListAdjacency);
+
+        void DrawVolumes(Vector4 debugColor, ID3D11RasterizerState cullState)
+        {
+            context.RSSetState(cullState);
+
+            _colorBuffer.Update(new ConstantBufferSurfaceColor
+            {
+                SurfaceColor = debugColor
+            });
+
+            foreach (var cmd in _opaques)
+            {
+                if (!cmd.CastsShadows)
+                {
+                    continue;
+                }
+
+                _modelBuffer.Update(new ConstantBufferModel
+                {
+                    Model = cmd.Transform,
+                    ModelInv = cmd.InvTransform
+                });
+
+                cmd.Mesh.Bind(useAdjacency: true);
+                context.DrawIndexed((uint)cmd.Mesh.AdjacencyIndexCount, 0, 0);
+            }
+
+            foreach (var cmd in _mirrors)
+            {
+                if (!cmd.CastsShadows)
+                {
+                    continue;
+                }
+
+                _modelBuffer.Update(new ConstantBufferModel
+                {
+                    Model = cmd.Transform,
+                    ModelInv = cmd.InvTransform
+                });
+
+                cmd.Mesh.Bind(useAdjacency: true);
+                context.DrawIndexed((uint)cmd.Mesh.AdjacencyIndexCount, 0, 0);
+            }
+        }
+
+        // comment one
+        DrawVolumes(new Vector4(0.2f, 0.0f, 0.0f, 1.0f), _cullBackState);
+        //DrawVolumes(new Vector4(0.0f, 0.2f, 0.0f, 1.0f), _cullFrontState);
 
         context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
         context.OMSetBlendState(null);
@@ -396,9 +489,9 @@ public class RenderingPipeline
 
     public void Dispose()
     {
-        _modelBuffer.Dispose();
-        _colorBuffer.Dispose();
-        _mirrorCamera.Dispose();
+        _modelBuffer?.Dispose();
+        _colorBuffer?.Dispose();
+        _mirrorCamera?.Dispose();
         _defaultDepthState?.Dispose();
         _noDepthState?.Dispose();
         _cullBackState?.Dispose();

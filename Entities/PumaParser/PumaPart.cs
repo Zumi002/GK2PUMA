@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Numerics;
 
 using GK2PUMA.Graphics;
+using GK2PUMA.Rendering;
 
 namespace GK2PUMA.Entities.PumaParser;
 
@@ -84,6 +85,8 @@ public sealed class PumaPart
             indices[t * 3 + 2] = (uint)Triangles[t].VertexIdxIdx3;
         }
 
-        return new Mesh(vertices, indices);
+        var adjList = AdjacencyHelper.Build(vertices, indices);
+
+        return new Mesh(vertices, indices, adjList);
     }
 }

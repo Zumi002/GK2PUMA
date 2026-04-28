@@ -65,18 +65,18 @@ public sealed class Puma : Entity, IDisposable
 
     public override void Render(Camera camera)
     {
-        //var chainedMatrix = Transforms[0].ModelMatrix;
-        //var chainedInv = Transforms[0].InvModelMatrix;
-        //for (int i = 0; i < PartCount; i++)
-        //{
-        //    if (i > 0)
-        //    {
-        //        chainedMatrix = Transforms[i].ModelMatrix * chainedMatrix;
-        //        chainedInv = chainedInv * Transforms[i].InvModelMatrix;
-        //    }
+        var chainedMatrix = Transforms[0].ModelMatrix;
+        var chainedInv = Transforms[0].InvModelMatrix;
+        for (int i = 0; i < PartCount; i++)
+        {
+            if (i > 0)
+            {
+                chainedMatrix = Transforms[i].ModelMatrix * chainedMatrix;
+                chainedInv = chainedInv * Transforms[i].InvModelMatrix;
+            }
 
-        //    GI.Instance.Pipeline.SubmitOpaque(_meshes[i], chainedMatrix, chainedInv, Color);
-        //}
+            GI.Instance.Pipeline.SubmitOpaque(_meshes[i], chainedMatrix, chainedInv, Color);
+        }
     }
 
     public override void Update(float deltaTime)

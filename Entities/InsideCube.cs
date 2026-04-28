@@ -65,6 +65,6 @@ public class InsideCube : Entity
     
     public override void Render(Camera camera)
     {
-        GI.Instance.Pipeline.SubmitOpaque(_mesh, Transform.ModelMatrix, Transform.InvModelMatrix, Color);
+        GI.Instance.Pipeline.SubmitOpaque(_mesh, Transform.ModelMatrix, Transform.InvModelMatrix, Color, castsShadows: false);
     }
 }

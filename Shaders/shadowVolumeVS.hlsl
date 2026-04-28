@@ -1,15 +1,5 @@
 ﻿#include "constantBuffers.hlsli"
- 
-struct VS_INPUT
-{
-    float3 Pos : POSITION;
-    float3 Norm : NORMAL;
-};
-
-struct GS_INPUT
-{
-    float3 WorldPos : POSITION0;
-};
+#include "shadowVolume.hlsli" 
 
 GS_INPUT VS(VS_INPUT input)
 {
