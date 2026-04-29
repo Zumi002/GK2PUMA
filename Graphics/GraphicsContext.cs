@@ -18,13 +18,6 @@ public class GraphicsContext
     public LightManager LightManager { get; } = new();
     public RenderingPipeline Pipeline { get; } = new();
 
-    public ID3D11DepthStencilState DepthStencilStateWrite { get; set; }
-    public ID3D11DepthStencilState DepthStencilStateTest { get; set; }
-    public ID3D11RasterizerState RasterizerStateCounterClockWise { get; set; }
-    public ID3D11RasterizerState RasterizerStateNoCull { get; set; }
-    public ID3D11BlendState BlendStateAlpha { get; set; }
-    public ID3D11BlendState BlendStateNoColor { get; set; }
-    
     public ID3D11RenderTargetView[] GBufferRTVs = new ID3D11RenderTargetView[3];
     public ID3D11ShaderResourceView[] GBufferSRVs = new ID3D11ShaderResourceView[3];
     public ID3D11SamplerState DefaultSampler;

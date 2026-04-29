@@ -77,48 +77,8 @@ internal class Program
         GI.Instance.Context = context;
         GI.Instance.SwapChain = swapChain;
 
-        var dssDesc = Descriptions.NewDepthStencilDescription();
-        dssDesc.DepthWriteMask = DepthWriteMask.Zero;
-        dssDesc.DepthFunc = ComparisonFunction.LessEqual;
-        dssDesc.StencilEnable = true;
-        dssDesc.StencilWriteMask = 0xFF;
-        dssDesc.FrontFace.StencilPassOp = StencilOperation.Replace;
-        dssDesc.FrontFace.StencilFunc = ComparisonFunction.Always;
-        dssDesc.BackFace.StencilPassOp = StencilOperation.Replace;
-        dssDesc.BackFace.StencilFunc = ComparisonFunction.Always;
-        GI.Instance.DepthStencilStateWrite = device.CreateDepthStencilState(dssDesc);
-
-        // dssDesc.BackFace.StencilFunc = ComparisonFunction.Never;
-        dssDesc.FrontFace.StencilFunc = ComparisonFunction.Equal;
-        // GI.Instance.DepthStencilStateTestNoDepthWrite = device.CreateDepthStencilState(dssDesc)
-        
-        dssDesc.StencilReadMask = 0xFF;
-        dssDesc.BackFace.StencilFunc = ComparisonFunction.Equal;
-        dssDesc.DepthWriteMask = DepthWriteMask.All;
-        GI.Instance.DepthStencilStateTest = device.CreateDepthStencilState(dssDesc);
-        
         GI.Instance.Resize(width, height);
-        
-        var rasterizerDesc = Descriptions.NewRasterizerDescription();
-        rasterizerDesc.FrontCounterClockwise = true;
-        GI.Instance.RasterizerStateCounterClockWise = device.CreateRasterizerState(rasterizerDesc);
-
-        rasterizerDesc = Descriptions.NewRasterizerDescription();
-        rasterizerDesc.CullMode = CullMode.None;
-        GI.Instance.RasterizerStateNoCull = device.CreateRasterizerState(rasterizerDesc);
-        
-        var bsDesc = Descriptions.NewBlendDescription();
-        bsDesc.RenderTarget[0].RenderTargetWriteMask = ColorWriteEnable.None;
-        GI.Instance.BlendStateNoColor = device.CreateBlendState(bsDesc);
-        
-        bsDesc.RenderTarget[0].RenderTargetWriteMask = ColorWriteEnable.All;
-        bsDesc.RenderTarget[0].BlendEnable = true;
-        bsDesc.RenderTarget[0].SourceBlend = Blend.SourceAlpha;
-        bsDesc.RenderTarget[0].DestinationBlend = Blend.InverseSourceAlpha;
-        bsDesc.RenderTarget[0].BlendOperation = BlendOperation.Add;
-        GI.Instance.BlendStateAlpha = device.CreateBlendState(bsDesc);
-
-        s_window.Resize += size =>
+        s_window.Resize += (size) =>
         {
             GI.Instance.Resize((uint)size.X, (uint)size.Y);
         };
@@ -247,11 +207,5 @@ internal class Program
         GI.Instance.SwapChain?.Dispose();
         GI.Instance.Context?.Dispose();
         GI.Instance.Device?.Dispose();
-        GI.Instance.DepthStencilStateWrite?.Dispose();
-        GI.Instance.DepthStencilStateTest?.Dispose();
-        GI.Instance.RasterizerStateCounterClockWise?.Dispose();
-        GI.Instance.RasterizerStateNoCull?.Dispose();
-        GI.Instance.BlendStateAlpha?.Dispose();
-        GI.Instance.BlendStateNoColor?.Dispose();
     }
 }
