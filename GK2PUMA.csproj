@@ -41,6 +41,7 @@
 
   <ItemGroup>
     <Content Include="Meshes\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Textures\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,6 +50,7 @@
 
   <ItemGroup>
     <PackageReference Include="Silk.NET.Input" Version="2.23.0" />
+    <PackageReference Include="StbImageSharp" Version="2.27.7" />
     <PackageReference Include="Silk.NET.Windowing" Version="2.23.0" />
     <PackageReference Include="Vortice.D3DCompiler" Version="3.8.3" />
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />

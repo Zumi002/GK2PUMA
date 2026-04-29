@@ -28,6 +28,7 @@ public class GraphicsContext
     public ID3D11RenderTargetView[] GBufferRTVs = new ID3D11RenderTargetView[3];
     public ID3D11ShaderResourceView[] GBufferSRVs = new ID3D11ShaderResourceView[3];
     public ID3D11SamplerState DefaultSampler;
+    public ID3D11ShaderResourceView DefaultWhiteTextureSRV;
 
     public uint Width { get; private set; }
     public uint Height { get; private set; }
@@ -102,6 +103,28 @@ public class GraphicsContext
                 MaxLOD = float.MaxValue
             };
             DefaultSampler = Device.CreateSamplerState(samplerDesc);
+        }
+
+        if (DefaultWhiteTextureSRV == null)
+        {
+            var texDesc = new Texture2DDescription
+            {
+                Width = 1, Height = 1, MipLevels = 1, ArraySize = 1,
+                Format = Format.R8G8B8A8_UNorm,
+                SampleDescription = new SampleDescription(1, 0),
+                Usage = ResourceUsage.Immutable,
+                BindFlags = BindFlags.ShaderResource
+            };
+            byte[] white = [255, 255, 255, 255];
+            unsafe
+            {
+                fixed (byte* p = white)
+                {
+                    var initData = new SubresourceData((nint)p, 4, 0);
+                    using var tex = Device.CreateTexture2D(texDesc, [initData]);
+                    DefaultWhiteTextureSRV = Device.CreateShaderResourceView(tex);
+                }
+            }
         }
 
         Context.RSSetViewport(new Viewport(0, 0, width, height));

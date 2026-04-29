@@ -11,7 +11,6 @@ using Silk.NET.Windowing.Glfw;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
-using Vortice.Mathematics;
 
 namespace GK2PUMA;
 
@@ -167,14 +166,7 @@ internal class Program
 
         s_camera = new Camera((float)width / height);
 
-        var myQuad = new ReflectiveQuad { 
-            RenderScene = () =>
-            {
-                foreach (var obj in GameObjects.Where(obj => obj is not ReflectiveQuad))
-                {
-                    obj.Render(s_camera);
-                }
-            },
+        var myQuad = new ReflectiveQuad {
             Transform =
             {
                 Position = new Vector3(0, -InsideCube.HalfSize + 1f, 2.5f),
