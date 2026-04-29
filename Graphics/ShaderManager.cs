@@ -7,6 +7,10 @@ public class ShaderManager
     {
         Unlit,
         BlinnPhong,
+        GPass,
+        LightPass,
+        AmbientPass,
+        ShadowVolume,
     }
     
     private readonly Dictionary<ShaderType, Shader> _shaders = new();

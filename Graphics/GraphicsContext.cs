@@ -16,11 +16,15 @@ public class GraphicsContext
     public ID3D11DepthStencilView DepthStencilView { get; set; }
     public ShaderManager ShaderManager { get; set; } = new ShaderManager();
     public LightManager LightManager { get; } = new();
+    public RenderingPipeline Pipeline { get; } = new();
+
+    public ID3D11RenderTargetView[] GBufferRTVs = new ID3D11RenderTargetView[3];
+    public ID3D11ShaderResourceView[] GBufferSRVs = new ID3D11ShaderResourceView[3];
+    public ID3D11SamplerState DefaultSampler;
 
     public uint Width { get; private set; }
     public uint Height { get; private set; }
     
-    private GraphicsContext() { }
     public void Resize(uint width, uint height)
     {
         if (width == 0 || height == 0 || (width == Width && height == Height))
@@ -33,6 +37,11 @@ public class GraphicsContext
 
         RenderTargetView?.Dispose();
         DepthStencilView?.Dispose();
+        for (int i = 0; i < 3; i++)
+        {
+            GBufferRTVs[i]?.Dispose();
+            GBufferSRVs[i]?.Dispose();
+        }
 
         SwapChain.ResizeBuffers(2, width, height, Format.R8G8B8A8_UNorm, SwapChainFlags.None);
 
@@ -53,6 +62,40 @@ public class GraphicsContext
 
         using var depthBuffer = Device.CreateTexture2D(depthDesc);
         DepthStencilView = Device.CreateDepthStencilView(depthBuffer);
+
+        var gBufferDesc = new Texture2DDescription
+        {
+            Width = width,
+            Height = height,
+            MipLevels = 1,
+            ArraySize = 1,
+            Format = Format.R32G32B32A32_Float,
+            SampleDescription = new SampleDescription(1, 0),
+            Usage = ResourceUsage.Default,
+            BindFlags = BindFlags.RenderTarget | BindFlags.ShaderResource
+        };
+
+        for (int i = 0; i < 3; i++)
+        {
+            using var tex = Device.CreateTexture2D(gBufferDesc);
+            GBufferRTVs[i] = Device.CreateRenderTargetView(tex);
+            GBufferSRVs[i] = Device.CreateShaderResourceView(tex);
+        }
+
+        if (DefaultSampler == null)
+        {
+            var samplerDesc = new SamplerDescription
+            {
+                Filter = Filter.MinMagMipPoint,
+                AddressU = TextureAddressMode.Clamp,
+                AddressV = TextureAddressMode.Clamp,
+                AddressW = TextureAddressMode.Clamp,
+                ComparisonFunc = ComparisonFunction.Never,
+                MinLOD = 0,
+                MaxLOD = float.MaxValue
+            };
+            DefaultSampler = Device.CreateSamplerState(samplerDesc);
+        }
 
         Context.RSSetViewport(new Viewport(0, 0, width, height));
     }

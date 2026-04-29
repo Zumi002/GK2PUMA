@@ -42,6 +42,6 @@ public static class MeshGenerator
             }
         }
 
-        return new Mesh(vertices, indices);
+        return new Mesh(vertices.ToArray(), indices.ToArray());
     }
 }

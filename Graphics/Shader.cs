@@ -1,5 +1,4 @@
 using System.Text;
-
 using SharpGen.Runtime;
 using Vortice.D3DCompiler;
 using Vortice.Direct3D;
@@ -11,9 +10,10 @@ public class Shader : IDisposable
 {
     public ID3D11VertexShader VertexShader { get; private set; }
     public ID3D11PixelShader PixelShader { get; private set; }
+    public ID3D11GeometryShader GeometryShader { get; private set; }
     public ID3D11InputLayout InputLayout { get; private set; }
 
-    public Shader(string vsPath, string psPath, InputElementDescription[] inputElements)
+    public Shader(string vsPath, string? psPath, InputElementDescription[] inputElements, string gsPath = null)
     {
         var device = GraphicsContext.Instance.Device;
 
@@ -25,13 +25,25 @@ public class Shader : IDisposable
 
         try
         {
-            var vsBlob = Compiler.Compile(Resources.ReadResource(vsPath), null, include, "VS", vsPath, "vs_5_0");
+            var vsBlob = Compiler.Compile(Resources.ReadResource(vsPath), [], include, "VS", vsPath, "vs_5_0");
             VertexShader = device.CreateVertexShader(vsBlob.Span);
 
-            var psBlob = Compiler.Compile(Resources.ReadResource(psPath), null, include, "PS", psPath, "ps_5_0");
-            PixelShader = device.CreatePixelShader(psBlob.Span);
+            if (!string.IsNullOrEmpty(psPath))
+            {
+                var psBlob = Compiler.Compile(Resources.ReadResource(psPath), [], include, "PS", psPath, "ps_5_0");
+                PixelShader = device.CreatePixelShader(psBlob.Span);
+            }
 
-            InputLayout = device.CreateInputLayout(inputElements, vsBlob.Span);
+            if (!string.IsNullOrEmpty(gsPath))
+            {
+                var gsBlob = Compiler.Compile(Resources.ReadResource(gsPath), [], include, "GS", gsPath, "gs_5_0");
+                GeometryShader = device.CreateGeometryShader(gsBlob.Span);
+            }
+
+            if (inputElements != null && inputElements.Length > 0)
+            {
+                InputLayout = device.CreateInputLayout(inputElements, vsBlob.Span);
+            }
         }
         catch (Exception ex)
         {
@@ -63,12 +75,14 @@ public class Shader : IDisposable
         context.IASetInputLayout(InputLayout);
         context.VSSetShader(VertexShader);
         context.PSSetShader(PixelShader);
+        context.GSSetShader(GeometryShader);
     }
 
     public void Dispose()
     {
         VertexShader?.Dispose();
         PixelShader?.Dispose();
+        GeometryShader?.Dispose();
         InputLayout?.Dispose();
     }
 }
