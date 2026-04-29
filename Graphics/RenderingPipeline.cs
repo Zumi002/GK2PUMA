@@ -37,7 +37,7 @@ public struct ParticleCommand
     public ID3D11ShaderResourceView? Texture;
 }
 
-public class RenderingPipeline
+public class RenderingPipeline : IDisposable
 {
     private readonly List<MirrorCommand> _mirrors = new();
     private readonly List<OpaqueCommand> _opaques = new();
@@ -207,11 +207,13 @@ public class RenderingPipeline
     public void SubmitMirror(Mesh mesh, Matrix4x4 transform, Matrix4x4 invTransform, Vector4 color, ID3D11ShaderResourceView? texture = null, bool castsShadows = true)
     {
         _mirrors.Add(
-            new MirrorCommand { 
-                Mesh = mesh, 
+            new MirrorCommand {
+                Mesh = mesh,
                 Transform = transform,
                 InvTransform = invTransform,
-                SurfaceColor = color
+                SurfaceColor = color,
+                Texture = texture,
+                CastsShadows = castsShadows
             }
         );
     }
@@ -236,7 +238,7 @@ public class RenderingPipeline
         {
             context.ClearDepthStencilView(
                 GraphicsContext.Instance.DepthStencilView,
-                Vortice.Direct3D11.DepthStencilClearFlags.Stencil,
+                DepthStencilClearFlags.Stencil,
                 1.0f,
                 0
             );
@@ -253,7 +255,7 @@ public class RenderingPipeline
 
         context.ClearDepthStencilView(
             GraphicsContext.Instance.DepthStencilView,
-            Vortice.Direct3D11.DepthStencilClearFlags.Stencil,
+            DepthStencilClearFlags.Stencil,
             1.0f,
             0
         );
@@ -310,7 +312,7 @@ public class RenderingPipeline
 
         _modelBuffer.Bind(0);
         _colorBuffer.Bind(2);
-        context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
+        context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         foreach (var cmd in _opaques)
         {
             _modelBuffer.Update(new ConstantBufferModel
@@ -382,9 +384,9 @@ public class RenderingPipeline
         _modelBuffer.Bind(0);
         GI.Instance.LightManager.Bind(3);
 
-        context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleListAdjacency);
+        context.IASetPrimitiveTopology(PrimitiveTopology.TriangleListAdjacency);
 
-        foreach (var cmd in _opaques)
+        foreach (var cmd in _opaques.Where(cmd => cmd.CastsShadows))
         {
             if (!cmd.CastsShadows)
             {
@@ -401,7 +403,7 @@ public class RenderingPipeline
             context.DrawIndexed((uint)cmd.Mesh.AdjacencyIndexCount, 0, 0);
         }
 
-        foreach (var cmd in _mirrors)
+        foreach (var cmd in _mirrors.Where(cmd => cmd.CastsShadows))
         {
             if (!cmd.CastsShadows)
             {
@@ -418,7 +420,7 @@ public class RenderingPipeline
             context.DrawIndexed((uint)cmd.Mesh.AdjacencyIndexCount, 0, 0);
         }
 
-        context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
+        context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         context.OMSetBlendState(null);
     }
 
@@ -435,7 +437,6 @@ public class RenderingPipeline
         _colorBuffer.Bind(2);
         GI.Instance.LightManager.Bind(3);
 
-        context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleListAdjacency);
 
         void DrawVolumes(Vector4 debugColor, ID3D11RasterizerState cullState)
         {
@@ -446,10 +447,8 @@ public class RenderingPipeline
                 SurfaceColor = debugColor
             });
 
-            foreach (var cmd in _opaques)
+            foreach (var cmd in _opaques.Where(cmd => cmd.CastsShadows))
             {
-                if (!cmd.CastsShadows)
-                {
                     continue;
                 }
 
@@ -463,10 +462,8 @@ public class RenderingPipeline
                 context.DrawIndexed((uint)cmd.Mesh.AdjacencyIndexCount, 0, 0);
             }
 
-            foreach (var cmd in _mirrors)
+            foreach (var cmd in _mirrors.Where(cmd => cmd.CastsShadows))
             {
-                if (!cmd.CastsShadows)
-                {
                     continue;
                 }
 
@@ -485,7 +482,7 @@ public class RenderingPipeline
         DrawVolumes(new Vector4(0.2f, 0.0f, 0.0f, 1.0f), _cullBackState);
         //DrawVolumes(new Vector4(0.0f, 0.2f, 0.0f, 1.0f), _cullFrontState);
 
-        context.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
+        context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         context.OMSetBlendState(null);
     }
 
@@ -546,5 +543,6 @@ public class RenderingPipeline
         _cullNoneState?.Dispose();
         _noColorWriteBlendState?.Dispose();
         _lightPassDepthState?.Dispose();
+        _additiveBlendState?.Dispose();
     }
 }

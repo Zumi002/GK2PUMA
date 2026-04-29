@@ -13,7 +13,6 @@ float4 Transform(float3 vert)
     return mul(Projection, v);
 }
 
-static const float EPS = 0.001;
 static const float SHADOW_LENGTH = 100.0;
 
 void EmitQuad(float3 edgeStart, float3 edgeEnd, float3 startDir, float3 endDir, inout TriangleStream<PS_INPUT> output)
@@ -29,9 +28,9 @@ void EmitQuad(float3 edgeStart, float3 edgeEnd, float3 startDir, float3 endDir, 
 
     o.Pos = s0;
     output.Append(o);
-    o.Pos = e0;
-    output.Append(o);
     o.Pos = s1;
+    output.Append(o);
+    o.Pos = e0;
     output.Append(o);
     o.Pos = e1;
     output.Append(o);
@@ -84,17 +83,17 @@ void GS(triangleadj GS_INPUT input[6], inout TriangleStream<PS_INPUT> output)
 
     PS_INPUT o;
     
-    o.Pos = Transform(v2 + lightDir[1] * EPS);
-    output.Append(o);
     o.Pos = Transform(v0 + lightDir[0] * EPS);
+    output.Append(o);
+    o.Pos = Transform(v2 + lightDir[1] * EPS);
     output.Append(o);
     o.Pos = Transform(v4 + lightDir[2] * EPS);
     output.Append(o);
     output.RestartStrip();
 
-    o.Pos = Transform(v0 + lightDir[0] * SHADOW_LENGTH);
-    output.Append(o);
     o.Pos = Transform(v2 + lightDir[1] * SHADOW_LENGTH);
+    output.Append(o);
+    o.Pos = Transform(v0 + lightDir[0] * SHADOW_LENGTH);
     output.Append(o);
     o.Pos = Transform(v4 + lightDir[2] * SHADOW_LENGTH);
     output.Append(o);

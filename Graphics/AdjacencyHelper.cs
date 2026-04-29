@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
 
-using GK2PUMA.Graphics;
-
-namespace GK2PUMA.Rendering;
+namespace GK2PUMA.Graphics;
 
 public static class AdjacencyHelper
 {
