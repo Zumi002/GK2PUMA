@@ -35,11 +35,6 @@ public sealed class Puma : Entity, IDisposable
 
     private readonly Mesh[] _meshes = new Mesh[PartCount];
 
-    private readonly ConstantBuffer<ConstantBufferModel>[] _constantBufferModel =
-        new ConstantBuffer<ConstantBufferModel>[PartCount];
-
-    private readonly ConstantBuffer<ConstantBufferSurfaceColor> _constantBufferSurfaceColor = new();
-
     public static float ThetaStep = MathF.PI / 2;
     public float Radius = 0.2f;
     private float _theta;
@@ -65,38 +60,23 @@ public sealed class Puma : Entity, IDisposable
             {
                 Transforms[i].Position = PivotPoints[i] - PivotPoints[i - 1];
             }
-
-            _constantBufferModel[i] = new ConstantBuffer<ConstantBufferModel>();
         }
-
-        _constantBufferSurfaceColor.Update(new ConstantBufferSurfaceColor { SurfaceColor = Color });
     }
 
     public override void Render(Camera camera)
     {
-        var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.BlinnPhong);
-        shader.Use();
-
-        _constantBufferSurfaceColor.Bind(2);
-        GI.Instance.LightManager.Bind(3);
-
         var chainedMatrix = Transforms[0].ModelMatrix;
+        var chainedInv = Transforms[0].InvModelMatrix;
         for (int i = 0; i < PartCount; i++)
         {
             if (i > 0)
             {
                 chainedMatrix = Transforms[i].ModelMatrix * chainedMatrix;
+                chainedInv = chainedInv * Transforms[i].InvModelMatrix;
             }
 
-            Matrix4x4.Invert(chainedMatrix, out var invChained);
-            _constantBufferModel[i].Update(new ConstantBufferModel { Model = chainedMatrix, ModelInv = invChained, });
-
-            _constantBufferModel[i].Bind();
-            _meshes[i].Bind();
-            GI.Instance.Context.DrawIndexed((uint)_meshes[i].IndexCount, 0, 0);
+            GI.Instance.Pipeline.SubmitOpaque(_meshes[i], chainedMatrix, chainedInv, Color);
         }
-
-        _meshes[PartCount - 1].Unbind();
     }
 
     public override void Update(float deltaTime)
@@ -198,10 +178,7 @@ public sealed class Puma : Entity, IDisposable
         for (int i = 0; i < PartCount; i++)
         {
             _meshes[i].Dispose();
-            _constantBufferModel[i].Dispose();
         }
-
-        _constantBufferSurfaceColor.Dispose();
     }
 
     private record Angles

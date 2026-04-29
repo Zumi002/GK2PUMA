@@ -42,7 +42,7 @@ public static class MeshGenerator
             }
         }
 
-        return new Mesh(vertices, indices);
+        return new Mesh(vertices.ToArray(), indices.ToArray());
     }
 
     public static Mesh CreateCylinderMesh(uint lidPrecision, uint widthPrecision)

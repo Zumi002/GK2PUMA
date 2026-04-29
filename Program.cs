@@ -80,18 +80,42 @@ internal class Program
             GI.Instance.Resize((uint)size.X, (uint)size.Y);
         };
 
-        var unlitShaderInputElements = new[]
+        GI.Instance.Pipeline.Init();
+
+        var positionNormalInputElements = new[]
         {
             new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
             new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 12, 0)
         };
 
         var unlitShader = new Shader($"{ShaderManager.BasePath}unlitVS.hlsl", $"{ShaderManager.BasePath}unlitPS.hlsl",
-            unlitShaderInputElements);
+            positionNormalInputElements);
+
         var phongShader = new Shader($"{ShaderManager.BasePath}blinnPhongVS.hlsl",
-            $"{ShaderManager.BasePath}blinnPhongPS.hlsl", unlitShaderInputElements);
+            $"{ShaderManager.BasePath}blinnPhongPS.hlsl", positionNormalInputElements);
+
+        var gpassShader = new Shader($"{ShaderManager.BasePath}gPassVS.hlsl",
+            $"{ShaderManager.BasePath}gPassPS.hlsl", positionNormalInputElements);
+
+        var lightPassShader = new Shader($"{ShaderManager.BasePath}lightPassVS.hlsl",
+            $"{ShaderManager.BasePath}lightPassPS.hlsl", []);
+
+        var ambientPassShader = new Shader($"{ShaderManager.BasePath}lightPassVS.hlsl",
+           $"{ShaderManager.BasePath}ambientPassPS.hlsl", []);
+
+        var shadowVolumeShader = new Shader(
+            $"{ShaderManager.BasePath}shadowVolumeVS.hlsl",
+            $"{ShaderManager.BasePath}unlitPS.hlsl",
+            positionNormalInputElements,
+            $"{ShaderManager.BasePath}shadowVolumeGS.hlsl"
+        );
+
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.Unlit, unlitShader);
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.BlinnPhong, phongShader);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.GPass, gpassShader);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.LightPass, lightPassShader);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.ShadowVolume, shadowVolumeShader);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.AmbientPass, ambientPassShader);
 
         var input = s_window.CreateInput();
         s_keyboard = input.Keyboards[0];
@@ -154,14 +178,12 @@ internal class Program
         GI.Instance.LightManager.Clear();
         s_camera.UpdateAndBindViewProjBuffer();
 
-        GI.Instance.Context.ClearRenderTargetView(GI.Instance.RenderTargetView, new Color4(0.1f, 0.1f, 0.1f, 1.0f));
-        GI.Instance.Context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
-        GI.Instance.Context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
-
         foreach (var obj in GameObjects)
         {
             obj.Render(s_camera);
         }
+
+        GI.Instance.Pipeline.Execute(s_camera);
 
         GI.Instance.SwapChain.Present(1, PresentFlags.None);
     }

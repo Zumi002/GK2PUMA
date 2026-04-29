@@ -7,9 +7,6 @@ namespace GK2PUMA.Entities;
 public class InsideCube : Entity
 {
     private readonly Mesh _mesh;
-    private readonly ConstantBuffer<ConstantBufferModel> _constantBufferModel;
-    private readonly ConstantBuffer<ConstantBufferSurfaceColor> _constantBufferSurfaceColor;
-    private bool _constantBufferModelIsDirty = true;
 
     public readonly Transform Transform = new();
     public Vector4 Color
@@ -64,34 +61,10 @@ public class InsideCube : Entity
         };
 
         _mesh = new (vertices, indices);
-        _constantBufferModel = new ConstantBuffer<ConstantBufferModel>();
-        _constantBufferSurfaceColor = new ConstantBuffer<ConstantBufferSurfaceColor>();
-        _constantBufferSurfaceColor.Update(new ConstantBufferSurfaceColor { SurfaceColor = Color });
-        Transform.OnMatricesRecalculated += _ => _constantBufferModelIsDirty = true;
     }
     
     public override void Render(Camera camera)
     {
-        var shader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.BlinnPhong);
-        shader.Use();
-
-        if (_constantBufferModelIsDirty)
-        {
-            _constantBufferModel.Update(new ConstantBufferModel
-            {
-                Model = Transform.ModelMatrix, 
-                ModelInv = Transform.InvModelMatrix,
-            });
-            _constantBufferModelIsDirty = false;
-        }
-        
-        _constantBufferModel.Bind(0);
-        _constantBufferSurfaceColor.Bind(2);
-        GI.Instance.LightManager.Bind(3);
-        _mesh.Bind();
-
-        GI.Instance.Context.DrawIndexed((uint)_mesh.IndexCount, 0, 0);
-
-        _mesh.Unbind();
+        GI.Instance.Pipeline.SubmitOpaque(_mesh, Transform.ModelMatrix, Transform.InvModelMatrix, Color);
     }
 }
