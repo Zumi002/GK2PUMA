@@ -15,3 +15,8 @@ cbuffer ConstantBuffer : register(b2)
 {
     float4 SurfaceColor;
 }
+
+cbuffer ClipPlaneBuffer : register(b4)
+{
+    float4 ClipPlane;
+}

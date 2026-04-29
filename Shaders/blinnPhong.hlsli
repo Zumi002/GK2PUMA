@@ -5,4 +5,5 @@ struct PS_INPUT
     float3 Norm : NORMAL;
     float3 WorldPos : POSITION0;
     float3 View : VIEWVEC0;
+    float ClipDist : SV_ClipDistance0;
 };

@@ -17,6 +17,7 @@ PS_INPUT VS(VS_INPUT input)
     output.Norm = mul(input.Norm, (float3x3) ModelInv);
     float3 cameraPos = mul(-View[3].xyz, (float3x3)View);
     output.View = cameraPos - output.WorldPos;
+    output.ClipDist = dot(worldPos.xyz, ClipPlane.xyz) + ClipPlane.w;
 
     return output;
 }

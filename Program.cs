@@ -85,6 +85,8 @@ internal class Program
         dssDesc.StencilWriteMask = 0xFF;
         dssDesc.FrontFace.StencilPassOp = StencilOperation.Replace;
         dssDesc.FrontFace.StencilFunc = ComparisonFunction.Always;
+        dssDesc.BackFace.StencilPassOp = StencilOperation.Replace;
+        dssDesc.BackFace.StencilFunc = ComparisonFunction.Always;
         GI.Instance.DepthStencilStateWrite = device.CreateDepthStencilState(dssDesc);
 
         // dssDesc.BackFace.StencilFunc = ComparisonFunction.Never;
@@ -101,6 +103,10 @@ internal class Program
         var rasterizerDesc = Descriptions.NewRasterizerDescription();
         rasterizerDesc.FrontCounterClockwise = true;
         GI.Instance.RasterizerStateCounterClockWise = device.CreateRasterizerState(rasterizerDesc);
+
+        rasterizerDesc = Descriptions.NewRasterizerDescription();
+        rasterizerDesc.CullMode = CullMode.None;
+        GI.Instance.RasterizerStateNoCull = device.CreateRasterizerState(rasterizerDesc);
         
         var bsDesc = Descriptions.NewBlendDescription();
         bsDesc.RenderTarget[0].RenderTargetWriteMask = ColorWriteEnable.None;
@@ -112,7 +118,7 @@ internal class Program
         bsDesc.RenderTarget[0].DestinationBlend = Blend.InverseSourceAlpha;
         bsDesc.RenderTarget[0].BlendOperation = BlendOperation.Add;
         GI.Instance.BlendStateAlpha = device.CreateBlendState(bsDesc);
-        
+
         s_window.Resize += size =>
         {
             GI.Instance.Resize((uint)size.X, (uint)size.Y);
@@ -167,8 +173,14 @@ internal class Program
             color: new Vector4(1.0f, 1.0f, 1.0f, 1.0f)
         );
         GI.Instance.LightManager.Add(pointLight.Position, pointLight.Color);
+        var pointLightOtherSideofMirror = new PointLight(
+            position: puma.Transform.Position + new Vector3(-1, 0.5f, 3),
+            color: new Vector4(1.0f, 1.0f, 1.0f, 1.0f)
+        );
+        GI.Instance.LightManager.Add(pointLightOtherSideofMirror.Position, pointLightOtherSideofMirror.Color);
         GI.Instance.LightManager.Update();
         GameObjects.Add(pointLight);
+        GameObjects.Add(pointLightOtherSideofMirror);
 
         GameObjects.Add(s_camera);
         GameObjects.Add(new InsideCube());
@@ -221,6 +233,7 @@ internal class Program
         GI.Instance.DepthStencilStateWrite?.Dispose();
         GI.Instance.DepthStencilStateTest?.Dispose();
         GI.Instance.RasterizerStateCounterClockWise?.Dispose();
+        GI.Instance.RasterizerStateNoCull?.Dispose();
         GI.Instance.BlendStateAlpha?.Dispose();
         GI.Instance.BlendStateNoColor?.Dispose();
     }

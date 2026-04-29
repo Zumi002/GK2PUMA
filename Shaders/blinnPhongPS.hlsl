@@ -30,7 +30,8 @@ float4 phong(float3 worldPos, float3 norm, float3 view)
     return saturate(float4(color, SurfaceColor.a));
 }
 
-float4 PS(PS_INPUT input) : SV_Target
+float4 PS(PS_INPUT input, bool isFrontFace : SV_IsFrontFace) : SV_Target
 {
-    return phong(input.WorldPos, input.Norm, input.View);
+    float3 norm = isFrontFace ? input.Norm : -input.Norm;
+    return phong(input.WorldPos, norm, input.View);
 }

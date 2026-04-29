@@ -10,6 +10,7 @@ struct PS_INPUT
 {
     float4 Pos : SV_POSITION;
     float3 Norm : NORMAL;
+    float ClipDist : SV_ClipDistance0;
 };
 
 PS_INPUT VS(VS_INPUT input)
@@ -21,6 +22,7 @@ PS_INPUT VS(VS_INPUT input)
     output.Pos = mul(Projection, viewPos);
     
     output.Norm = mul(input.Norm, (float3x3) ModelInv);
-    
+    output.ClipDist = dot(worldPos.xyz, ClipPlane.xyz) + ClipPlane.w;
+
     return output;
 }

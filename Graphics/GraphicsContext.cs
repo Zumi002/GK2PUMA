@@ -68,6 +68,12 @@ public class GraphicsContext
         set;
     }
 
+    public ID3D11RasterizerState RasterizerStateNoCull
+    {
+        get;
+        set;
+    }
+
     public ID3D11BlendState BlendStateAlpha
     {
         get;
