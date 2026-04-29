@@ -6,7 +6,7 @@ public class Transform
 {
     private Vector3 _position = Vector3.Zero;
     private Vector3 _rotation = Vector3.Zero;
-    private float _scale = 1.0f;
+    private Vector3 _scale = new(1.0f, 1.0f, 1.0f);
 
     private bool _isDirty = true;
     private Matrix4x4 _modelMatrix;
@@ -46,7 +46,7 @@ public class Transform
         }
     }
 
-    public float Scale
+    public Vector3 AxisScale
     {
         get
         {
@@ -55,9 +55,28 @@ public class Transform
 
         set
         {
-            if (Math.Abs(value - _scale) > 0.001f)
+            if (_scale != value)
             {
                 _scale = value;
+                _isDirty = true;
+            }
+        }
+    }
+
+    public float Scale
+    {
+        get
+        {
+            return _scale.X;
+        }
+
+        set
+        {
+            if (Math.Abs(value - _scale.X) > 0.001f ||
+                Math.Abs(value - _scale.Y) > 0.001f ||
+                Math.Abs(value - _scale.Z) > 0.001f)
+            {
+                _scale = new(value, value, value);
                 _isDirty = true;
             }
         }
@@ -98,7 +117,7 @@ public class Transform
     private void RecacheMatrices()
     {
         _isDirty = false;
-        _modelMatrix = Matrix4x4.CreateScale(Scale) *
+        _modelMatrix = Matrix4x4.CreateScale(AxisScale.X, AxisScale.Y, AxisScale.Z) *
                        Matrix4x4.CreateFromYawPitchRoll(Rotation.Y, Rotation.X, Rotation.Z) *
                        Matrix4x4.CreateTranslation(Position);
         Matrix4x4.Invert(ModelMatrix, out _invModelMatrix);
