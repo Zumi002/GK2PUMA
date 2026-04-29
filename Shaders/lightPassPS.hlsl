@@ -30,7 +30,7 @@ float4 PS(PS_INPUT input) : SV_Target
     
     clip(albedoData.a - 0.001f);
     
-    float3 albedo = ColorMap.Sample(Sampler, input.TexCoord).rgb;
+    float3 albedo = albedoData.rgb;
     float3 normal = NormalMap.Sample(Sampler, input.TexCoord).xyz;
     float3 worldPos = WorldPosMap.Sample(Sampler, input.TexCoord).xyz;
 

@@ -25,18 +25,18 @@ public class Shader : IDisposable
 
         try
         {
-            var vsBlob = Compiler.Compile(Resources.ReadResource(vsPath), null, include, "VS", vsPath, "vs_5_0");
+            var vsBlob = Compiler.Compile(Resources.ReadResource(vsPath), [], include, "VS", vsPath, "vs_5_0");
             VertexShader = device.CreateVertexShader(vsBlob.Span);
 
             if (!string.IsNullOrEmpty(psPath))
             {
-                var psBlob = Compiler.Compile(Resources.ReadResource(psPath), null, include, "PS", psPath, "ps_5_0");
+                var psBlob = Compiler.Compile(Resources.ReadResource(psPath), [], include, "PS", psPath, "ps_5_0");
                 PixelShader = device.CreatePixelShader(psBlob.Span);
             }
 
             if (!string.IsNullOrEmpty(gsPath))
             {
-                var gsBlob = Compiler.Compile(Resources.ReadResource(gsPath), null, include, "GS", gsPath, "gs_5_0");
+                var gsBlob = Compiler.Compile(Resources.ReadResource(gsPath), [], include, "GS", gsPath, "gs_5_0");
                 GeometryShader = device.CreateGeometryShader(gsBlob.Span);
             }
 

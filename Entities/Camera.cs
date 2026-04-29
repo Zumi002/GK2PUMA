@@ -161,11 +161,8 @@ public class Camera : Entity, IDisposable
 
         ViewMatrix = Matrix4x4.CreateLookAtLeftHanded(Position, Position + Forward, Up);
 
-        if (Math.Abs(mainCamera.AspectRatio - AspectRatio) > 0.001f)
-        {
-            AspectRatio = mainCamera.AspectRatio;
-        }
-
+        AspectRatio = mainCamera.AspectRatio;
+        
         if (_projectionDirty)
         {
             ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfViewLeftHanded(_fovY, _aspectRatio, _nearPlane, _farPlane);
