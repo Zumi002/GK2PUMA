@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Runtime.InteropServices;
 
 using GK2PUMA.Entities;
 
@@ -47,6 +48,7 @@ public class RenderingPipeline
 
     private ID3D11DepthStencilState? _defaultDepthState;
     private ID3D11DepthStencilState? _noDepthState;
+    private ID3D11DepthStencilState? _noDepthWriteState;
     private ID3D11RasterizerState? _cullBackState;
     private ID3D11RasterizerState? _cullFrontState;
     private ID3D11DepthStencilState? _shadowVolumeDepthState;
@@ -78,6 +80,15 @@ public class RenderingPipeline
             StencilEnable = false
         };
         _noDepthState = device.CreateDepthStencilState(noDepthDesc);
+
+        var noDepthWriteDesc = new DepthStencilDescription
+        {
+            DepthEnable = true,
+            DepthWriteMask = DepthWriteMask.Zero,
+            DepthFunc = ComparisonFunction.LessEqual,
+            StencilEnable = false
+        };
+        _noDepthWriteState = device.CreateDepthStencilState(noDepthWriteDesc);
 
         var cullBackDesc = new RasterizerDescription
         {
@@ -480,7 +491,39 @@ public class RenderingPipeline
 
     private void RenderParticles(ID3D11DeviceContext context, Camera camera)
     {
+        if (_particles.Count == 0)
+        {
+            return;
+        }
 
+        context.RSSetState(_cullNoneState);
+        context.OMSetDepthStencilState(_noDepthWriteState, 0);
+        context.OMSetBlendState(_additiveBlendState);
+        context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
+
+        var particleShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.Particle);
+        particleShader.Use();
+
+        foreach (var cmd in _particles)
+        {
+            if (cmd.InstanceCount == 0)
+            {
+                continue;
+            }
+
+            if (cmd.Texture != null)
+            {
+                context.PSSetShaderResources(0, new[] { cmd.Texture });
+                context.PSSetSamplers(0, new[] { GI.Instance.DefaultSampler });
+            }
+
+            cmd.Mesh.Bind();
+            context.IASetVertexBuffers(1, new[] { cmd.InstanceBuffer }, new[] { (uint)Marshal.SizeOf<ParticleInstance>() }, new[] { 0u });
+            context.DrawIndexedInstanced((uint)cmd.Mesh.IndexCount, (uint)cmd.InstanceCount, 0, 0, 0);
+        }
+
+        context.IASetVertexBuffers(1, new ID3D11Buffer[] { null }, new[] { 0u }, new[] { 0u });
+        context.OMSetBlendState(null);
     }
 
     private void ClearQueues()

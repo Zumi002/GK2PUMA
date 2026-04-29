@@ -110,12 +110,30 @@ internal class Program
             $"{ShaderManager.BasePath}shadowVolumeGS.hlsl"
         );
 
+        var particleInputElements = new[]
+        {
+            new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0, InputClassification.PerVertexData, 0),
+            new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 12, 0, InputClassification.PerVertexData, 0),
+
+            new InputElementDescription("INSTANCE_CURRPOS", 0, Format.R32G32B32_Float, 0,  1, InputClassification.PerInstanceData, 1),
+            new InputElementDescription("INSTANCE_AGE",     0, Format.R32_Float,       12, 1, InputClassification.PerInstanceData, 1),
+            new InputElementDescription("INSTANCE_PREVPOS", 0, Format.R32G32B32_Float, 16, 1, InputClassification.PerInstanceData, 1),
+            new InputElementDescription("INSTANCE_MAXAGE",  0, Format.R32_Float,       28, 1, InputClassification.PerInstanceData, 1)
+        };
+
+        var particleShader = new Shader(
+           $"{ShaderManager.BasePath}particleVS.hlsl",
+           $"{ShaderManager.BasePath}particlePS.hlsl",
+           particleInputElements
+       );
+
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.Unlit, unlitShader);
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.BlinnPhong, phongShader);
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.GPass, gpassShader);
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.LightPass, lightPassShader);
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.ShadowVolume, shadowVolumeShader);
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.AmbientPass, ambientPassShader);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.Particle, particleShader);
 
         var input = s_window.CreateInput();
         s_keyboard = input.Keyboards[0];
@@ -147,6 +165,7 @@ internal class Program
 
         GameObjects.Add(s_camera);
         GameObjects.Add(new InsideCube());
+        GameObjects.Add(new ParticleEmitter());
     }
 
     private static void OnUpdate(double deltaTime)
