@@ -54,7 +54,10 @@ public static class MeshGenerator
         GenerateCylinderSideVertices();
         GenerateCylinderSideIndices();
         GenerateCylinderCapVerticesAndIndices();
-        return new Mesh(vertices, indices);
+        var verts = vertices.ToArray();
+        var idx = indices.ToArray();
+        var adjIdx = AdjacencyHelper.Build(verts, idx);
+        return new Mesh(verts, idx, adjIdx);
 
         Vector2[] GenerateUnitCircleVertices()
         {
