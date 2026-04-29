@@ -61,6 +61,7 @@ public class RenderingPipeline : IDisposable
     private ID3D11DepthStencilState? _mirrorStencilWriteState;
     private ID3D11DepthStencilState? _mirrorGPassDepthState;
 
+
     private Camera? _mirrorCamera;
 
     private static readonly Vector4 NoClipPlane = new(0, 0, 0, 1);
@@ -343,6 +344,7 @@ public class RenderingPipeline : IDisposable
                 0
             );
 
+            _mirrorCamera ??= new Camera(1.0f);
             _mirrorCamera.UpdateAsMirror(mainCamera, mirrorCommand.Transform);
             _mirrorCamera.UpdateAndBindViewProjBuffer();
 
@@ -389,9 +391,14 @@ public class RenderingPipeline : IDisposable
         Vector3 worldNormal = Vector3.Normalize(new Vector3(-mt.M31, -mt.M32, -mt.M33));
         float planeD = -Vector3.Dot(worldNormal, worldOrigin);
         float cameraSide = Vector3.Dot(mainCamera.Position, worldNormal) + planeD;
+
+        // Clip geometry on the side opposite to the main camera.
+        // The reflected camera is behind the mirror, so we keep geometry in front of the mirror (camera side)
+        // and discard anything that is behind the mirror from the real camera's perspective.
+        // Added a small epsilon (0.001f) to avoid Z-fighting/clipping of the mirror surface itself if needed.
         Vector4 clipPlane = cameraSide >= 0
-            ? new Vector4(worldNormal, planeD)
-            : new Vector4(-worldNormal, -planeD);
+            ? new Vector4(worldNormal, planeD + 0.001f)
+            : new Vector4(-worldNormal, -planeD + 0.001f);
 
         _clipPlaneBuffer.Update(new ConstantBufferClipPlane { ClipPlane = clipPlane });
         _clipPlaneBuffer.Bind(4);
@@ -409,21 +416,23 @@ public class RenderingPipeline : IDisposable
         var gPassShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.GPass);
         gPassShader.Use();
 
-        _modelBuffer.Bind(0);
-        _colorBuffer.Bind(2);
+        _modelBuffer?.Bind(0);
+        _colorBuffer?.Bind(2);
         context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
 
-        foreach (var cmd in _opaques)
+        foreach (var cmd in _opaques.Where(cmd => cmd.Mesh != mirrorCommand.Mesh))
         {
-            _modelBuffer.Update(new ConstantBufferModel
+            _modelBuffer?.Update(new ConstantBufferModel
             {
                 Model = cmd.Transform,
                 ModelInv = cmd.InvTransform
             });
-            _colorBuffer.Update(new ConstantBufferSurfaceColor { SurfaceColor = cmd.SurfaceColor });
+            _colorBuffer?.Update(new ConstantBufferSurfaceColor { SurfaceColor = cmd.SurfaceColor });
 
             if (cmd.Texture != null)
+            {
                 context.PSSetShaderResources(0, new[] { cmd.Texture });
+            }
 
             cmd.Mesh.Bind();
             context.DrawIndexed((uint)cmd.Mesh.IndexCount, 0, 0);
@@ -436,8 +445,7 @@ public class RenderingPipeline : IDisposable
 
     private void RenderMirrorShadowVolume(ID3D11DeviceContext context, Camera mirrorCamera)
     {
-        // Shadow volumes in the mirror are left for a future iteration.
-        // Without this pass the reflection is fully lit (no shadows in mirror).
+        // TODO: Implement in free time
     }
 
     private void RenderMirrorLightPass(ID3D11DeviceContext context, Camera mirrorCamera)
@@ -454,7 +462,7 @@ public class RenderingPipeline : IDisposable
         ambientShader.Use();
 
         context.PSSetShaderResources(0, GI.Instance.GBufferSRVs);
-        context.PSSetSamplers(0, new[] { GI.Instance.DefaultSampler });
+        context.PSSetSamplers(0, [GI.Instance.DefaultSampler]);
 
         context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         context.Draw(3, 0);
@@ -470,7 +478,7 @@ public class RenderingPipeline : IDisposable
 
         context.Draw(3, 0);
 
-        context.PSSetShaderResources(0, new ID3D11ShaderResourceView[] { null, null, null });
+        context.PSSetShaderResources(0, [null, null, null]);
         context.OMSetBlendState(null);
     }
 
@@ -481,6 +489,7 @@ public class RenderingPipeline : IDisposable
 
     private void RenderMirrorSurface(ID3D11DeviceContext context, Camera mainCamera, MirrorCommand mirrorCommand)
     {
+        // Draw the surface overlay (e.g. dirty glass, decal or just a tint color).
         mainCamera.UpdateAndBindViewProjBuffer();
 
         context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
@@ -489,21 +498,22 @@ public class RenderingPipeline : IDisposable
         context.OMSetDepthStencilState(_lightPassDepthState, 1);
         context.RSSetState(_cullNoneState);
 
+
         var unlitShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.Unlit);
         unlitShader.Use();
 
-        _modelBuffer.Update(new ConstantBufferModel
+        _modelBuffer?.Update(new ConstantBufferModel
         {
             Model = mirrorCommand.Transform,
             ModelInv = mirrorCommand.InvTransform
         });
-        _modelBuffer.Bind(0);
-        _colorBuffer.Update(new ConstantBufferSurfaceColor { SurfaceColor = mirrorCommand.SurfaceColor });
-        _colorBuffer.Bind(2);
+        _modelBuffer?.Bind();
+        _colorBuffer?.Update(new ConstantBufferSurfaceColor { SurfaceColor = mirrorCommand.SurfaceColor });
+        _colorBuffer?.Bind(2);
 
         var tex = mirrorCommand.Texture ?? GI.Instance.DefaultWhiteTextureSRV;
-        context.PSSetShaderResources(0, new[] { tex });
-        context.PSSetSamplers(0, new[] { GI.Instance.DefaultSampler });
+        context.PSSetShaderResources(0, [tex]);
+        context.PSSetSamplers(0, [GI.Instance.DefaultSampler]);
 
         context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         mirrorCommand.Mesh.Bind();

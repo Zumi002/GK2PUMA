@@ -143,34 +143,21 @@ public class Camera : Entity, IDisposable
         });
         _viewProjBuffer.Bind(1);
     }
-    
-    public void UpdateAndBindViewProjBuffer(Matrix4x4 view)
-    {
-        _viewProjBuffer.Update(new ConstantBufferViewProj
-        {
-            View = view,
-            Projection = ProjectionMatrix,
-        });
-        _viewProjBuffer.Bind(1);
-    }
 
     public void UpdateAsMirror(Camera mainCamera, Matrix4x4 mirrorTransform)
     {
-        Vector3 mirrorPos = new Vector3(mirrorTransform.M41, mirrorTransform.M42, mirrorTransform.M43);
-        Vector3 mirrorNormal = Vector3.Normalize(new Vector3(mirrorTransform.M31, mirrorTransform.M32, mirrorTransform.M33));
+        Vector3 mirrorPos = new(mirrorTransform.M41, mirrorTransform.M42, mirrorTransform.M43);
+        Vector3 mirrorNormal = Vector3.Normalize(new Vector3(-mirrorTransform.M31, -mirrorTransform.M32, -mirrorTransform.M33));
 
         float d = -Vector3.Dot(mirrorNormal, mirrorPos);
-        Plane mirrorPlane = new Plane(mirrorNormal, d);
+        Plane mirrorPlane = new(mirrorNormal, d);
 
         Matrix4x4 reflectionMatrix = Matrix4x4.CreateReflection(mirrorPlane);
-
+        ViewMatrix = Matrix4x4.Multiply(reflectionMatrix, mainCamera.ViewMatrix);
         Position = Vector3.Transform(mainCamera.Position, reflectionMatrix);
         Forward = Vector3.TransformNormal(mainCamera.Forward, reflectionMatrix);
         Up = Vector3.TransformNormal(mainCamera.Up, reflectionMatrix);
         Right = Vector3.TransformNormal(mainCamera.Right, reflectionMatrix);
-
-        ViewMatrix = Matrix4x4.CreateLookAtLeftHanded(Position, Position + Forward, Up);
-
         AspectRatio = mainCamera.AspectRatio;
         
         if (_projectionDirty)
