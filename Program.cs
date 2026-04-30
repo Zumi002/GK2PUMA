@@ -132,7 +132,8 @@ internal class Program
                 Position = new Vector3(0, -InsideCube.HalfSize + 1f, 2.5f),
                 Rotation = new Vector3(30.0f * MathF.PI / 180, 0.0f, 0),
                 Scale = 1.0f
-            }
+            },
+            Texture = GI.Instance.LoadTextureFromStream(Resources.GetResourceStream($"{GI.TextureBasePath}corrugated_iron_02_diff_4k.jpg")),
         };
         GameObjects.Add(myQuad);
 
@@ -154,7 +155,7 @@ internal class Program
         GameObjects.Add(cylinder);
 
         var pointLight = new PointLight(
-            position: puma.Transform.Position + new Vector3(-2, 1.5f, 0f),
+            position: new Vector3(-3.0f, -2.5f, 1.5f),
             color: new Vector4(1.0f, 1.0f, 1.0f, 1.0f)
         );
         GI.Instance.LightManager.Add(pointLight.Position, pointLight.Color);

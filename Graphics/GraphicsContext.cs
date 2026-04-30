@@ -1,4 +1,6 @@
-﻿using Vortice.Direct3D11;
+﻿using StbImageSharp;
+
+using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.Mathematics;
 
@@ -6,6 +8,7 @@ namespace GK2PUMA.Graphics;
 
 public class GraphicsContext
 {
+    public const string TextureBasePath = "GK2PUMA.Textures.";
     private static GraphicsContext s_instance;
     public static GraphicsContext Instance => s_instance ??= new GraphicsContext();
 
@@ -87,10 +90,10 @@ public class GraphicsContext
         {
             var samplerDesc = new SamplerDescription
             {
-                Filter = Filter.MinMagMipPoint,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp,
+                Filter = Filter.MinMagMipLinear,
+                AddressU = TextureAddressMode.Wrap,
+                AddressV = TextureAddressMode.Wrap,
+                AddressW = TextureAddressMode.Wrap,
                 ComparisonFunc = ComparisonFunction.Never,
                 MinLOD = 0,
                 MaxLOD = float.MaxValue
@@ -122,4 +125,34 @@ public class GraphicsContext
 
         Context.RSSetViewport(new Viewport(0, 0, width, height));
     }
+    
+    public ID3D11ShaderResourceView LoadTextureFromStream(Stream stream)
+    {
+        var image = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
+
+        var textureDesc = new Texture2DDescription
+        {
+            Width = (uint)image.Width,
+            Height = (uint)image.Height,
+            MipLevels = 1,
+            ArraySize = 1,
+            Format = Format.R8G8B8A8_UNorm,
+            SampleDescription = new SampleDescription(1, 0),
+            Usage = ResourceUsage.Immutable,
+            BindFlags = BindFlags.ShaderResource,
+            CPUAccessFlags = CpuAccessFlags.None,
+            MiscFlags = ResourceOptionFlags.None
+        };
+
+        unsafe
+        {
+            fixed (byte* ptr = image.Data)
+            {
+                var data = new SubresourceData((IntPtr)ptr, (uint)image.Width * 4);
+                using var texture = Device.CreateTexture2D(textureDesc, new[] { data });
+                return Device.CreateShaderResourceView(texture);
+            }
+        }
+    }
+
 }

@@ -57,10 +57,12 @@ public class RenderingPipeline : IDisposable
     private ID3D11BlendState? _additiveBlendState;
     private ID3D11BlendState? _alphaBlendState;
 
-    // Mirror-specific states
+    // Mirror-specific
+    
+    /// Depth test read-only and stencil write
     private ID3D11DepthStencilState? _mirrorStencilWriteState;
+    /// Depth test-write and stencil test == ref
     private ID3D11DepthStencilState? _mirrorGPassDepthState;
-
 
     private Camera? _mirrorCamera;
 
@@ -104,6 +106,7 @@ public class RenderingPipeline : IDisposable
             FrontCounterClockwise = false,
             DepthClipEnable = true
         };
+        _cullFrontState = device.CreateRasterizerState(cullFrontDesc);
 
         var shadowDepthDesc = new DepthStencilDescription
         {
@@ -196,7 +199,6 @@ public class RenderingPipeline : IDisposable
         };
         _alphaBlendState = device.CreateBlendState(alphaBlendDesc);
 
-        // Depth test read-only + stencil write: marks mirror area (StencilPassOp = Replace)
         var mirrorStencilWriteDesc = new DepthStencilDescription
         {
             DepthEnable = true,
@@ -222,7 +224,6 @@ public class RenderingPipeline : IDisposable
         };
         _mirrorStencilWriteState = device.CreateDepthStencilState(mirrorStencilWriteDesc);
 
-        // Depth test + write, stencil test == ref (render only inside mirror area)
         var mirrorGPassDepthDesc = new DepthStencilDescription
         {
             DepthEnable = true,
@@ -247,8 +248,7 @@ public class RenderingPipeline : IDisposable
             }
         };
         _mirrorGPassDepthState = device.CreateDepthStencilState(mirrorGPassDepthDesc);
-
-        _cullFrontState = device.CreateRasterizerState(cullFrontDesc);
+        
         _modelBuffer = new();
         _colorBuffer = new();
         _clipPlaneBuffer = new();
@@ -299,128 +299,92 @@ public class RenderingPipeline : IDisposable
     {
         var context = GI.Instance.Context;
 
-        // Clear main RT once here (not per-pass)
-        context.OMSetRenderTargets(GI.Instance.RenderTargetView, (ID3D11DepthStencilView?)null);
+        context.OMSetRenderTargets(GI.Instance.RenderTargetView);
         context.ClearRenderTargetView(GI.Instance.RenderTargetView, new Color4(0.1f, 0.1f, 0.1f, 1.0f));
-
-        // Ensure no clip for the main G-Pass
-        _clipPlaneBuffer.Update(new ConstantBufferClipPlane { ClipPlane = NoClipPlane });
-        _clipPlaneBuffer.Bind(4);
-
-        // Main scene
         context.ClearDepthStencilView(
             GraphicsContext.Instance.DepthStencilView,
             DepthStencilClearFlags.Stencil,
             1.0f,
             0
         );
-
+        _modelBuffer?.Bind(0);
+        _colorBuffer?.Bind(2);
+        _clipPlaneBuffer?.Update(new ConstantBufferClipPlane { ClipPlane = NoClipPlane });
+        _clipPlaneBuffer?.Bind(4);
+        
+        context.ClearDepthStencilView(
+            GraphicsContext.Instance.DepthStencilView,
+            DepthStencilClearFlags.Stencil,
+            1.0f,
+            0
+        );
+        mainCamera.UpdateAndBindViewProjBuffer();
+        _clipPlaneBuffer?.Update(new ConstantBufferClipPlane { ClipPlane = NoClipPlane });
         RenderGPass(context, mainCamera);
         RenderShadowVolume(context, mainCamera);
         RenderLightPass(context, mainCamera);
         RenderParticles(context, mainCamera);
+        
 
-        // Mirror passes — run after main scene so we can read main-scene depth for stencil
+        context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+        context.OMSetBlendState(null);
+        context.ClearDepthStencilView(
+            GraphicsContext.Instance.DepthStencilView,
+            DepthStencilClearFlags.Stencil,
+            1.0f,
+            0
+        );
+        mainCamera.UpdateAndBindViewProjBuffer();
+        RenderMirrorStencilPass(context);
+        
+        uint stencilRef = 0;
         foreach (var mirrorCommand in _mirrors)
         {
-            // Clear stencil but keep depth from main G-Pass (used in stencil pass below)
-            context.ClearDepthStencilView(
-                GraphicsContext.Instance.DepthStencilView,
-                DepthStencilClearFlags.Stencil,
-                1.0f,
-                0
-            );
-
-            // Stencil pass uses main camera — ensure it's bound
-            mainCamera.UpdateAndBindViewProjBuffer();
-
-            RenderMirrorStencilPass(context, mirrorCommand);
-
-            // Clear depth so mirror camera can render the reflected scene
+            stencilRef++;
+            _mirrorCamera ??= new Camera(1.0f);
+            _mirrorCamera.UpdateAsMirror(mainCamera, mirrorCommand.Transform);
+            _mirrorCamera.UpdateAndBindViewProjBuffer();
+        
             context.ClearDepthStencilView(
                 GraphicsContext.Instance.DepthStencilView,
                 DepthStencilClearFlags.Depth,
                 1.0f,
                 0
             );
-
-            _mirrorCamera ??= new Camera(1.0f);
-            _mirrorCamera.UpdateAsMirror(mainCamera, mirrorCommand.Transform);
-            _mirrorCamera.UpdateAndBindViewProjBuffer();
-
-            RenderMirrorGPass(context, _mirrorCamera, mainCamera, mirrorCommand);
+        
+            RenderMirrorGPass(context, _mirrorCamera, mainCamera, mirrorCommand, stencilRef);
             RenderMirrorShadowVolume(context, _mirrorCamera);
-            RenderMirrorLightPass(context, _mirrorCamera);
+            RenderMirrorLightPass(context, _mirrorCamera, stencilRef);
             RenderMirrorParticles(context, _mirrorCamera);
-            RenderMirrorSurface(context, mainCamera, mirrorCommand);
+            RenderMirrorSurface(context, mainCamera, mirrorCommand, stencilRef);
         }
 
         ClearQueues();
     }
 
-    private void RenderMirrorStencilPass(ID3D11DeviceContext context, MirrorCommand mirrorCommand)
+    private void BindCommonBuffers()
     {
-        context.OMSetRenderTargets(GI.Instance.GBufferRTVs, GI.Instance.DepthStencilView);
-        context.OMSetBlendState(_noColorWriteBlendState);
-        context.OMSetDepthStencilState(_mirrorStencilWriteState, 1);
-        context.RSSetState(_cullNoneState);
-
-        var gPassShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.GPass);
-        gPassShader.Use();
-
-        _modelBuffer.Update(new ConstantBufferModel
-        {
-            Model = mirrorCommand.Transform,
-            ModelInv = mirrorCommand.InvTransform
-        });
-        _modelBuffer.Bind(0);
-
-        context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
-        mirrorCommand.Mesh.Bind();
-        context.DrawIndexed((uint)mirrorCommand.Mesh.IndexCount, 0, 0);
-        mirrorCommand.Mesh.Unbind();
-
-        context.OMSetBlendState(null);
+        _modelBuffer?.Bind();
+        _colorBuffer?.Bind(2);
+        _clipPlaneBuffer?.Bind(4);
     }
 
-    private void RenderMirrorGPass(ID3D11DeviceContext context, Camera mirrorCamera, Camera mainCamera, MirrorCommand mirrorCommand)
+    private void ClearGBuffer(ID3D11DeviceContext context)
     {
-        // Compute clip plane from mirror transform and main camera position
-        var mt = mirrorCommand.Transform;
-        Vector3 worldOrigin = new(mt.M41, mt.M42, mt.M43);
-        Vector3 worldNormal = Vector3.Normalize(new Vector3(-mt.M31, -mt.M32, -mt.M33));
-        float planeD = -Vector3.Dot(worldNormal, worldOrigin);
-        float cameraSide = Vector3.Dot(mainCamera.Position, worldNormal) + planeD;
-
-        // Clip geometry on the side opposite to the main camera.
-        // The reflected camera is behind the mirror, so we keep geometry in front of the mirror (camera side)
-        // and discard anything that is behind the mirror from the real camera's perspective.
-        // Added a small epsilon (0.001f) to avoid Z-fighting/clipping of the mirror surface itself if needed.
-        Vector4 clipPlane = cameraSide >= 0
-            ? new Vector4(worldNormal, planeD + 0.001f)
-            : new Vector4(-worldNormal, -planeD + 0.001f);
-
-        _clipPlaneBuffer.Update(new ConstantBufferClipPlane { ClipPlane = clipPlane });
-        _clipPlaneBuffer.Bind(4);
-
-        context.RSSetState(_cullFrontState);
-        context.OMSetDepthStencilState(_mirrorGPassDepthState, 1);
-
-        context.OMSetRenderTargets(GI.Instance.GBufferRTVs, GI.Instance.DepthStencilView);
-
         var clearColor = new Color4(0.0f, 0.0f, 0.0f, 0.0f);
-        context.ClearRenderTargetView(GI.Instance.GBufferRTVs[0], clearColor);
-        context.ClearRenderTargetView(GI.Instance.GBufferRTVs[1], clearColor);
-        context.ClearRenderTargetView(GI.Instance.GBufferRTVs[2], clearColor);
+        foreach (var rtv in GI.Instance.GBufferRTVs)
+        {
+            context.ClearRenderTargetView(rtv, clearColor);
+        }
+    }
 
+    private void DrawOpaqueBatch(ID3D11DeviceContext context, Mesh? excludeMesh = null)
+    {
         var gPassShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.GPass);
         gPassShader.Use();
-
-        _modelBuffer?.Bind(0);
-        _colorBuffer?.Bind(2);
         context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
 
-        foreach (var cmd in _opaques.Where(cmd => cmd.Mesh != mirrorCommand.Mesh))
+        foreach (var cmd in _opaques.Where(cmd => cmd.Mesh != excludeMesh))
         {
             _modelBuffer?.Update(new ConstantBufferModel
             {
@@ -429,18 +393,66 @@ public class RenderingPipeline : IDisposable
             });
             _colorBuffer?.Update(new ConstantBufferSurfaceColor { SurfaceColor = cmd.SurfaceColor });
 
-            if (cmd.Texture != null)
+            context.PSSetShaderResources(0, [cmd.Texture ?? GI.Instance.DefaultWhiteTextureSRV]);
+
+            cmd.Mesh.Bind();
+            context.DrawIndexed((uint)cmd.Mesh.IndexCount, 0, 0);
+        }
+    }
+
+    private void RenderMirrorStencilPass(ID3D11DeviceContext context)
+    {
+        uint stencilRef = 0;
+        context.OMSetRenderTargets(GI.Instance.GBufferRTVs, GI.Instance.DepthStencilView);
+        context.OMSetBlendState(_noColorWriteBlendState);
+        context.RSSetState(_cullNoneState);
+        context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+
+        var gPassShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.GPass);
+        gPassShader.Use();
+
+        foreach (var cmd in _mirrors)
+        {
+            stencilRef++;
+            context.OMSetDepthStencilState(_mirrorStencilWriteState, stencilRef);
+            _modelBuffer?.Update(new ConstantBufferModel
             {
-                context.PSSetShaderResources(0, new[] { cmd.Texture });
-            }
+                Model = cmd.Transform,
+                ModelInv = cmd.InvTransform
+            });
 
             cmd.Mesh.Bind();
             context.DrawIndexed((uint)cmd.Mesh.IndexCount, 0, 0);
         }
 
-        // Reset clip plane to no-clip for subsequent passes
-        _clipPlaneBuffer.Update(new ConstantBufferClipPlane { ClipPlane = NoClipPlane });
-        _clipPlaneBuffer.Bind(4);
+        context.OMSetBlendState(null);
+    }
+
+    private void RenderMirrorGPass(ID3D11DeviceContext context, Camera mirrorCamera, Camera mainCamera, MirrorCommand mirrorCommand, uint stencilRef)
+    {
+        UpdateClipPlane(mainCamera, mirrorCommand);
+
+        context.RSSetState(_cullFrontState);
+        context.OMSetDepthStencilState(_mirrorGPassDepthState, stencilRef);
+        context.OMSetRenderTargets(GI.Instance.GBufferRTVs, GI.Instance.DepthStencilView);
+
+        ClearGBuffer(context);
+        DrawOpaqueBatch(context, mirrorCommand.Mesh);
+    }
+
+    private void UpdateClipPlane(Camera camera, MirrorCommand mirrorCommand)
+    {
+        var mt = mirrorCommand.Transform;
+        Vector3 worldOrigin = new(mt.M41, mt.M42, mt.M43);
+        Vector3 worldNormal = Vector3.Normalize(new Vector3(-mt.M31, -mt.M32, -mt.M33));
+        float planeD = -Vector3.Dot(worldNormal, worldOrigin);
+        float cameraSide = Vector3.Dot(camera.Position, worldNormal) + planeD;
+
+        Vector4 clipPlane = cameraSide >= 0
+            ? new Vector4(worldNormal, planeD + 0.001f)
+            : new Vector4(-worldNormal, -planeD + 0.001f);
+
+        _clipPlaneBuffer?.Update(new ConstantBufferClipPlane { ClipPlane = clipPlane });
     }
 
     private void RenderMirrorShadowVolume(ID3D11DeviceContext context, Camera mirrorCamera)
@@ -448,14 +460,16 @@ public class RenderingPipeline : IDisposable
         // TODO: Implement in free time
     }
 
-    private void RenderMirrorLightPass(ID3D11DeviceContext context, Camera mirrorCamera)
+    private void RenderMirrorLightPass(ID3D11DeviceContext context, Camera mirrorCamera, uint stencilRef)
+    {
+        context.OMSetDepthStencilState(_lightPassDepthState, stencilRef);
+        PerformLightPass(context);
+    }
+
+    private void PerformLightPass(ID3D11DeviceContext context)
     {
         context.RSSetState(_cullBackState);
-
         context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
-
-        // Ambient sub-pass: stencil test == 1 (mirror area only)
-        context.OMSetDepthStencilState(_lightPassDepthState, 1);
         context.OMSetBlendState(null);
 
         var ambientShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.AmbientPass);
@@ -467,8 +481,6 @@ public class RenderingPipeline : IDisposable
         context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         context.Draw(3, 0);
 
-        // Light sub-pass: stencil test == 1, additive blend
-        context.OMSetDepthStencilState(_lightPassDepthState, 1);
         context.OMSetBlendState(_additiveBlendState);
 
         var lightPassShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.LightPass);
@@ -484,36 +496,31 @@ public class RenderingPipeline : IDisposable
 
     private void RenderMirrorParticles(ID3D11DeviceContext context, Camera mirrorCamera)
     {
-
+        // TODO: implement
     }
 
-    private void RenderMirrorSurface(ID3D11DeviceContext context, Camera mainCamera, MirrorCommand mirrorCommand)
+    private void RenderMirrorSurface(ID3D11DeviceContext context, Camera mainCamera, MirrorCommand mirrorCommand, uint stencilRef)
     {
-        // Draw the surface overlay (e.g. dirty glass, decal or just a tint color).
         mainCamera.UpdateAndBindViewProjBuffer();
-
         context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
         context.OMSetBlendState(_alphaBlendState);
-        // No depth test; stencil test == 1 ensures we draw only inside the mirror area
-        context.OMSetDepthStencilState(_lightPassDepthState, 1);
-        context.RSSetState(_cullNoneState);
+        context.OMSetDepthStencilState(_lightPassDepthState, stencilRef);
+        context.RSSetState(_cullBackState);
+        _clipPlaneBuffer?.Update(new ConstantBufferClipPlane { ClipPlane = NoClipPlane });
 
-
-        var unlitShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.Unlit);
+        var unlitShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.BlinnPhong);
         unlitShader.Use();
+
+        var tex = mirrorCommand.Texture ?? GI.Instance.DefaultWhiteTextureSRV;
+        context.PSSetShaderResources(0, [tex]);
+        context.PSSetSamplers(0, [GI.Instance.DefaultSampler]);
 
         _modelBuffer?.Update(new ConstantBufferModel
         {
             Model = mirrorCommand.Transform,
             ModelInv = mirrorCommand.InvTransform
         });
-        _modelBuffer?.Bind();
         _colorBuffer?.Update(new ConstantBufferSurfaceColor { SurfaceColor = mirrorCommand.SurfaceColor });
-        _colorBuffer?.Bind(2);
-
-        var tex = mirrorCommand.Texture ?? GI.Instance.DefaultWhiteTextureSRV;
-        context.PSSetShaderResources(0, [tex]);
-        context.PSSetSamplers(0, [GI.Instance.DefaultSampler]);
 
         context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         mirrorCommand.Mesh.Bind();
@@ -532,39 +539,10 @@ public class RenderingPipeline : IDisposable
 
         context.OMSetRenderTargets(GI.Instance.GBufferRTVs, GI.Instance.DepthStencilView);
 
-        var clearColor = new Color4(0.0f, 0.0f, 0.0f, 0.0f);
-        context.ClearRenderTargetView(GI.Instance.GBufferRTVs[0], clearColor);
-        context.ClearRenderTargetView(GI.Instance.GBufferRTVs[1], clearColor);
-        context.ClearRenderTargetView(GI.Instance.GBufferRTVs[2], clearColor);
+        ClearGBuffer(context);
         context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
 
-        var gPassShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.GPass);
-        gPassShader.Use();
-
-        _modelBuffer.Bind(0);
-        _colorBuffer.Bind(2);
-        context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
-        foreach (var cmd in _opaques)
-        {
-            _modelBuffer.Update(new ConstantBufferModel
-            {
-                Model = cmd.Transform,
-                ModelInv = cmd.InvTransform
-            });
-
-            _colorBuffer.Update(new ConstantBufferSurfaceColor
-            {
-                SurfaceColor = cmd.SurfaceColor
-            });
-
-            if (cmd.Texture != null)
-            {
-                context.PSSetShaderResources(0, new[] { cmd.Texture });
-            }
-
-            cmd.Mesh.Bind();
-            context.DrawIndexed((uint)cmd.Mesh.IndexCount, 0, 0);
-        }
+        DrawOpaqueBatch(context);
     }
 
     private void RenderLightPass(ID3D11DeviceContext context, Camera camera)
@@ -574,7 +552,6 @@ public class RenderingPipeline : IDisposable
         context.OMSetBlendState(null);
 
         context.OMSetRenderTargets(GI.Instance.RenderTargetView, null);
-        // Note: main RT is cleared once at the top of Execute(), not here
 
         var ambientShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.AmbientPass);
         ambientShader.Use();
@@ -651,11 +628,6 @@ public class RenderingPipeline : IDisposable
         context.OMSetBlendState(_additiveBlendState);
         context.OMSetDepthStencilState(_defaultDepthState, 0);
 
-        var shadowShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.ShadowVolume);
-        shadowShader.Use();
-
-        _modelBuffer.Bind(0);
-        _colorBuffer.Bind(2);
         GI.Instance.LightManager.Bind(3);
 
         context.IASetPrimitiveTopology(PrimitiveTopology.TriangleListAdjacency);
@@ -664,14 +636,14 @@ public class RenderingPipeline : IDisposable
         {
             context.RSSetState(cullState);
 
-            _colorBuffer.Update(new ConstantBufferSurfaceColor
+            _colorBuffer?.Update(new ConstantBufferSurfaceColor
             {
                 SurfaceColor = debugColor
             });
 
             foreach (var cmd in _opaques.Where(cmd => cmd.CastsShadows))
             {
-                _modelBuffer.Update(new ConstantBufferModel
+                _modelBuffer?.Update(new ConstantBufferModel
                 {
                     Model = cmd.Transform,
                     ModelInv = cmd.InvTransform
@@ -683,7 +655,7 @@ public class RenderingPipeline : IDisposable
 
             foreach (var cmd in _mirrors.Where(cmd => cmd.CastsShadows))
             {
-                _modelBuffer.Update(new ConstantBufferModel
+                _modelBuffer?.Update(new ConstantBufferModel
                 {
                     Model = cmd.Transform,
                     ModelInv = cmd.InvTransform

@@ -37,6 +37,7 @@
     <EmbeddedResource Include="Shaders\shadowVolumeVS.hlsl" />
     <EmbeddedResource Include="Shaders\unlitPS.hlsl" />
     <EmbeddedResource Include="Shaders\unlitVS.hlsl" />
+    <EmbeddedResource Include="Textures\corrugated_iron_02_diff_4k.jpg" />
   </ItemGroup>
 
   <ItemGroup>
