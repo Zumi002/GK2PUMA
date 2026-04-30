@@ -90,10 +90,10 @@ public class GraphicsContext
         {
             var samplerDesc = new SamplerDescription
             {
-                Filter = Filter.MinMagMipLinear,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap,
+                Filter = Filter.MinMagMipPoint,
+                AddressU = TextureAddressMode.Clamp,
+                AddressV = TextureAddressMode.Clamp,
+                AddressW = TextureAddressMode.Clamp,
                 ComparisonFunc = ComparisonFunction.Never,
                 MinLOD = 0,
                 MaxLOD = float.MaxValue
@@ -125,7 +125,7 @@ public class GraphicsContext
 
         Context.RSSetViewport(new Viewport(0, 0, width, height));
     }
-    
+
     public ID3D11ShaderResourceView LoadTextureFromStream(Stream stream)
     {
         var image = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);

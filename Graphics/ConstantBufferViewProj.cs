@@ -8,4 +8,5 @@ public struct ConstantBufferViewProj
 {
     public Matrix4x4 View;
     public Matrix4x4 Projection;
+    public Vector3 Pos;
 }
