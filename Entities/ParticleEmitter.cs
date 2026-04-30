@@ -32,16 +32,20 @@ public class Particle
 
 public class ParticleEmitter : Entity    
 {
-    private readonly List<Particle> _sparks = new();
+    private readonly List<Particle> _particles = new();
     private readonly Random _rand = new();
 
     private Mesh _quadMesh;
     private ID3D11Buffer _instanceBuffer;
     private ID3D11ShaderResourceView _particleTexture;
 
-    private const int MaxParticles = 200;
-    private bool _animating;
-    private bool _pressingN;
+    private const int MaxParticles = 500;
+    private const float ParticlesPerSecond = 2;
+    private const float ParticleMaxAgeInSeconds = 1;
+
+    public bool Animating;
+    public Vertex PositonNormal;
+
     public ParticleEmitter()
     {
         var device = GI.Instance.Device;
@@ -69,34 +73,37 @@ public class ParticleEmitter : Entity
 
         using Stream textureStream = Resources.GetResourceStream($"{GI.TextureBasePath}rain.png"); 
         _particleTexture = GI.Instance.LoadTextureFromStream(textureStream);
-        _animating = false;
-        _pressingN = false;
+    }
+
+    public void SetEmitterPositionAndNormal(Vertex positionNormal)
+    {
+        PositonNormal = positionNormal;
     }
 
     public override void Update(float dt)
     {
-        if (!_animating)
+        if (!Animating)
         {
             return;
         }
 
-        for (int i = _sparks.Count - 1; i >= 0; i--)
+        for (int i = _particles.Count - 1; i >= 0; i--)
         {
-            var spark = _sparks[i];
-            spark.PreviousPosition = spark.Position;
-            spark.Velocity += new Vector3(0, -9.81f*0.1f, 0) * dt;
-            spark.Position += spark.Velocity * dt;
-            spark.Age += dt;
+            var particle = _particles[i];
+            particle.PreviousPosition = particle.Position;
+            particle.Velocity += new Vector3(0, -9.81f*0.5f, 0) * dt;
+            particle.Position += particle.Velocity * dt;
+            particle.Age += dt;
 
-            if (!spark.IsAlive)
+            if (!particle.IsAlive)
             {
-                _sparks.RemoveAt(i);
+                _particles.RemoveAt(i);
             }
         }
 
         for (int i = 0; i < 1; i++)
         {
-            if (_sparks.Count + 1 >= MaxParticles)
+            if (_particles.Count + 1 >= MaxParticles)
             {
                 break;
             }
@@ -107,47 +114,30 @@ public class ParticleEmitter : Entity
                 (float)_rand.NextDouble() - 0.5f
             );
 
-            Vector3 startVelocity = Vector3.Normalize(Vector3.One + randomOffset*3f) * (2.0f + (float)_rand.NextDouble() * 3.0f) * 1f;
+            Vector3 startVelocity = Vector3.Normalize(PositonNormal.Normal + Vector3.Normalize(randomOffset)) * (2f + (float)_rand.NextDouble() * 1f);
 
-            _sparks.Add(new Particle
+            _particles.Add(new Particle
             {
-                Position = Vector3.Zero,
-                PreviousPosition = Vector3.Zero,
+                Position = PositonNormal.Position,
+                PreviousPosition = PositonNormal.Position,
                 Velocity = startVelocity,
                 Age = 0.0f,
-                MaxAge = 2.0f + (float)_rand.NextDouble()
+                MaxAge = ParticleMaxAgeInSeconds + (float)_rand.NextDouble()
             });
-        }
-    }
-
-    public override void HandleInput(IKeyboard keyboard, IMouse mouse, float dt)
-    {
-        if (keyboard.IsKeyPressed(Key.N))
-        {
-            if (!_pressingN)
-            {
-                _animating = !_animating;
-            }
-
-            _pressingN = true;
-        }
-        else
-        {
-            _pressingN = false;
         }
     }
 
     public ParticleInstance[] GetInstanceData()
     {
-        var data = new ParticleInstance[_sparks.Count];
-        for (int i = 0; i < _sparks.Count; i++)
+        var data = new ParticleInstance[_particles.Count];
+        for (int i = 0; i < _particles.Count; i++)
         {
             data[i] = new ParticleInstance
             {
-                CurrentPos = _sparks[i].Position,
-                PreviousPos = _sparks[i].PreviousPosition,
-                Age = _sparks[i].Age,
-                MaxAge = _sparks[i].MaxAge
+                CurrentPos = _particles[i].Position,
+                PreviousPos = _particles[i].PreviousPosition,
+                Age = _particles[i].Age,
+                MaxAge = _particles[i].MaxAge
             };
         }
 
@@ -156,7 +146,7 @@ public class ParticleEmitter : Entity
 
     public override void Render(Camera camera)
     {
-        if (_sparks.Count == 0)
+        if (_particles.Count == 0)
         {
             return;
         }
@@ -169,14 +159,14 @@ public class ParticleEmitter : Entity
             var mappedResource = context.Map(_instanceBuffer, 0, MapMode.WriteDiscard);
             fixed (void* ptr = instanceData)
             {
-                int bytesToCopy = _sparks.Count * Marshal.SizeOf<ParticleInstance>();
+                int bytesToCopy = _particles.Count * Marshal.SizeOf<ParticleInstance>();
                 System.Buffer.MemoryCopy(ptr, mappedResource.DataPointer.ToPointer(), mappedResource.RowPitch, bytesToCopy);
             }
 
             context.Unmap(_instanceBuffer, 0);
         }
 
-        GI.Instance.Pipeline.SubmitParticle(_quadMesh, _instanceBuffer, _sparks.Count, _particleTexture);
+        GI.Instance.Pipeline.SubmitParticle(_quadMesh, _instanceBuffer, _particles.Count, _particleTexture);
     }
 
     public void Dispose()

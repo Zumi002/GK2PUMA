@@ -146,9 +146,10 @@ internal class Program
         myQuad.Transform.Scale = 1.0f;
         GameObjects.Add(myQuad);
 
+        var particleEmitter = new ParticleEmitter();
+
         Puma.ThetaStep = MathF.PI / 2;
-        var puma = new Puma();
-        puma.Sheet = myQuad;
+        var puma = new Puma(sheet: myQuad, particleEmitter: particleEmitter);
         puma.Radius = 0.25f;
         puma.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1, 1);
         puma.Transform.Rotation = new Vector3(0, myQuad.Transform.Rotation.Y, 0);
@@ -173,7 +174,7 @@ internal class Program
 
         GameObjects.Add(s_camera);
         GameObjects.Add(new InsideCube());
-        GameObjects.Add(new ParticleEmitter());
+        GameObjects.Add(particleEmitter);
     }
 
     private static void OnUpdate(double deltaTime)

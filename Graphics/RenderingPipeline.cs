@@ -475,6 +475,7 @@ public class RenderingPipeline : IDisposable
         {
             return;
         }
+
         camera.UpdateAndBindViewProjBuffer();
         context.RSSetState(_cullNoneState);
         context.OMSetDepthStencilState(_noDepthWriteState, 0);

@@ -5,7 +5,7 @@ cbuffer ConstantBufferCamera : register(b1)
 {
     matrix View;
     matrix Projection;
-    float3 Pos;
+    float3 CamPos;
 }
 
 float4 Transform(float3 vert)
