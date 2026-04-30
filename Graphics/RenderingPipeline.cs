@@ -360,7 +360,6 @@ public class RenderingPipeline : IDisposable
         RenderGPass(context, mainCamera);
         RenderShadowVolume(context, mainCamera);
         RenderLightPass(context, mainCamera);
-        RenderParticles(context, mainCamera);
         
 
         context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
@@ -395,6 +394,7 @@ public class RenderingPipeline : IDisposable
             RenderMirrorParticles(context, mainCamera, _mirrorCamera, stencilRef);
             RenderMirrorSurface(context, mainCamera, mirrorCommand, stencilRef);
         }
+        RenderParticles(context, mainCamera);
 
         ClearQueues();
     }
