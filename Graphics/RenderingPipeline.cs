@@ -526,13 +526,12 @@ public class RenderingPipeline : IDisposable
 
     private void RenderMirrorParticles(ID3D11DeviceContext context, Camera mainCamera, Camera mirrorCamera, uint stencilRef)
     {
-        // TODO: implement
         if (_particles.Count == 0)
         {
             return;
         }
 
-        mirrorCamera.UpdateAndBindViewProjBuffer();
+        mirrorCamera.UpdateAndBindViewProjBuffer(mainCamera.Position);
         context.RSSetState(_cullNoneState);
         context.OMSetDepthStencilState(_mirrorNoDepthWriteState, stencilRef);
         context.OMSetBlendState(_additiveBlendState);
