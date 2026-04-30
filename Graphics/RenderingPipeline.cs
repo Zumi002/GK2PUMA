@@ -54,6 +54,7 @@ public class RenderingPipeline : IDisposable
     private ID3D11RasterizerState? _cullFrontState;
     private ID3D11DepthStencilState? _shadowVolumeDepthState;
     private ID3D11DepthStencilState? _lightPassDepthState;
+    private ID3D11DepthStencilState? _mirrorSurfaceDepthState;
     private ID3D11RasterizerState? _cullNoneState;
     private ID3D11BlendState? _noColorWriteBlendState;
     private ID3D11BlendState? _additiveBlendState;
@@ -183,6 +184,31 @@ public class RenderingPipeline : IDisposable
         };
         _lightPassDepthState = device.CreateDepthStencilState(lightPassDepthDesc);
         
+        var mirrorSurfaceDepthDesc = new DepthStencilDescription
+        {
+            DepthEnable = true,
+            DepthWriteMask = DepthWriteMask.Zero,
+            DepthFunc = ComparisonFunction.LessEqual,
+            StencilEnable = true,
+            StencilReadMask = 0xFF,
+            StencilWriteMask = 0x00,
+            FrontFace = new DepthStencilOperationDescription
+            {
+                StencilFailOp = StencilOperation.Keep,
+                StencilDepthFailOp = StencilOperation.Keep,
+                StencilPassOp = StencilOperation.Keep,
+                StencilFunc = ComparisonFunction.Equal
+            },
+            BackFace = new DepthStencilOperationDescription
+            {
+                StencilFailOp = StencilOperation.Keep,
+                StencilDepthFailOp = StencilOperation.Keep,
+                StencilPassOp = StencilOperation.Keep,
+                StencilFunc = ComparisonFunction.Equal
+            }
+        };
+        _mirrorSurfaceDepthState = device.CreateDepthStencilState(mirrorSurfaceDepthDesc);
+
         var mirrorNoDepthWriteDesc = new DepthStencilDescription
         {
             DepthEnable = true,
@@ -380,8 +406,10 @@ public class RenderingPipeline : IDisposable
             _mirrorCamera.UpdateAsMirror(mainCamera, mirrorCommand.Transform);
             _mirrorCamera.UpdateAndBindViewProjBuffer();
         
+            context.CopyResource(GI.Instance.MirrorDepthStencilTexture, GI.Instance.DepthStencilTexture);
+
             context.ClearDepthStencilView(
-                GraphicsContext.Instance.DepthStencilView,
+                GraphicsContext.Instance.MirrorDepthStencilView,
                 DepthStencilClearFlags.Depth,
                 1.0f,
                 0
@@ -464,7 +492,7 @@ public class RenderingPipeline : IDisposable
 
         context.RSSetState(_cullFrontState);
         context.OMSetDepthStencilState(_mirrorGPassDepthState, stencilRef);
-        context.OMSetRenderTargets(GI.Instance.GBufferRTVs, GI.Instance.DepthStencilView);
+        context.OMSetRenderTargets(GI.Instance.GBufferRTVs, GI.Instance.MirrorDepthStencilView);
 
         ClearGBuffer(context);
         DrawOpaqueBatch(context, mirrorCommand.Mesh);
@@ -496,10 +524,10 @@ public class RenderingPipeline : IDisposable
         PerformLightPass(context);
     }
 
-    private void PerformLightPass(ID3D11DeviceContext context)
+    private void PerformLightPass(ID3D11DeviceContext context, ID3D11DepthStencilView? dsv = null)
     {
         context.RSSetState(_cullBackState);
-        context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
+        context.OMSetRenderTargets(GI.Instance.RenderTargetView, dsv ?? GI.Instance.DepthStencilView);
         context.OMSetBlendState(null);
 
         var ambientShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.AmbientPass);
@@ -535,7 +563,7 @@ public class RenderingPipeline : IDisposable
         context.RSSetState(_cullNoneState);
         context.OMSetDepthStencilState(_mirrorNoDepthWriteState, stencilRef);
         context.OMSetBlendState(_additiveBlendState);
-        context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
+        context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.MirrorDepthStencilView);
 
         var particleShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.Particle);
         particleShader.Use();

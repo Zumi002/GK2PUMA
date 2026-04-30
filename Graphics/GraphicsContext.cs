@@ -17,6 +17,9 @@ public class GraphicsContext
     public IDXGISwapChain SwapChain { get; set; }
     public ID3D11RenderTargetView RenderTargetView { get; set; }
     public ID3D11DepthStencilView DepthStencilView { get; set; }
+    public ID3D11DepthStencilView MirrorDepthStencilView { get; set; }
+    public ID3D11Texture2D DepthStencilTexture { get; private set; }
+    public ID3D11Texture2D MirrorDepthStencilTexture { get; private set; }
     public ShaderManager ShaderManager { get; set; } = new ShaderManager();
     public LightManager LightManager { get; } = new();
     public RenderingPipeline Pipeline { get; } = new();
@@ -41,6 +44,9 @@ public class GraphicsContext
 
         RenderTargetView?.Dispose();
         DepthStencilView?.Dispose();
+        MirrorDepthStencilView?.Dispose();
+        DepthStencilTexture?.Dispose();
+        MirrorDepthStencilTexture?.Dispose();
         for (int i = 0; i < 3; i++)
         {
             GBufferRTVs[i]?.Dispose();
@@ -64,8 +70,11 @@ public class GraphicsContext
             BindFlags = BindFlags.DepthStencil
         };
 
-        using var depthBuffer = Device.CreateTexture2D(depthDesc);
-        DepthStencilView = Device.CreateDepthStencilView(depthBuffer);
+        DepthStencilTexture = Device.CreateTexture2D(depthDesc);
+        DepthStencilView = Device.CreateDepthStencilView(DepthStencilTexture);
+
+        MirrorDepthStencilTexture = Device.CreateTexture2D(depthDesc);
+        MirrorDepthStencilView = Device.CreateDepthStencilView(MirrorDepthStencilTexture);
 
         var gBufferDesc = new Texture2DDescription
         {
