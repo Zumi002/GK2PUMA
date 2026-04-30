@@ -14,6 +14,7 @@
     <None Remove="Shaders\lighting.hlsli" />
     <None Remove="Shaders\lightPassPS.hlsl" />
     <None Remove="Shaders\lightPassVS.hlsl" />
+    <None Remove="Shaders\particle.hlsli" />
     <None Remove="Shaders\particlePS.hlsl" />
     <None Remove="Shaders\particleVS.hlsl" />
     <None Remove="Shaders\shadowVolume.hlsli" />
@@ -38,6 +39,7 @@
     <EmbeddedResource Include="Shaders\lighting.hlsli" />
     <EmbeddedResource Include="Shaders\lightPassPS.hlsl" />
     <EmbeddedResource Include="Shaders\lightPassVS.hlsl" />
+    <EmbeddedResource Include="Shaders\particle.hlsli" />
     <EmbeddedResource Include="Shaders\particlePS.hlsl" />
     <EmbeddedResource Include="Shaders\particleVS.hlsl" />
     <EmbeddedResource Include="Shaders\shadowVolume.hlsli" />
