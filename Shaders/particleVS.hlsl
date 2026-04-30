@@ -7,6 +7,11 @@ cbuffer ConstantBufferCamera : register(b1)
     float3 CamPos;
 }
 
+cbuffer ClipPlaneBuffer : register(b4)
+{
+    float4 ClipPlane;
+}
+
 PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output;
@@ -33,6 +38,7 @@ PS_INPUT VS(VS_INPUT input)
     output.UV = input.Pos.xy;
     output.AgeAlpha = saturate(1.0f - (input.Age / input.MaxAge));
     output.Texture = input.Texture;
+    output.ClipDist = dot(pos.xyz, ClipPlane.xyz) + ClipPlane.w;
     
     return output;
 }

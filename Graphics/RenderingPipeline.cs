@@ -361,7 +361,6 @@ public class RenderingPipeline : IDisposable
         RenderShadowVolume(context, mainCamera);
         RenderLightPass(context, mainCamera);
         
-
         context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         context.OMSetBlendState(null);
         context.ClearDepthStencilView(
@@ -394,16 +393,10 @@ public class RenderingPipeline : IDisposable
             RenderMirrorParticles(context, mainCamera, _mirrorCamera, stencilRef);
             RenderMirrorSurface(context, mainCamera, mirrorCommand, stencilRef);
         }
+        _clipPlaneBuffer?.Update(new ConstantBufferClipPlane { ClipPlane = NoClipPlane });
         RenderParticles(context, mainCamera);
 
         ClearQueues();
-    }
-
-    private void BindCommonBuffers()
-    {
-        _modelBuffer?.Bind();
-        _colorBuffer?.Bind(2);
-        _clipPlaneBuffer?.Bind(4);
     }
 
     private void ClearGBuffer(ID3D11DeviceContext context)
@@ -539,7 +532,7 @@ public class RenderingPipeline : IDisposable
             return;
         }
 
-        mirrorCamera.UpdateAndBindViewProjBuffer(mainCamera.Position);
+        mirrorCamera.UpdateAndBindViewProjBuffer();
         context.RSSetState(_cullNoneState);
         context.OMSetDepthStencilState(_mirrorNoDepthWriteState, stencilRef);
         context.OMSetBlendState(_additiveBlendState);

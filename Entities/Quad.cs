@@ -12,7 +12,7 @@ public class Quad : Entity
     public Vector4 Color
     {
         get;
-    } = new(1.0f, 1.0f, 1.0f, 0.75f);
+    } = new(1.0f, 1.0f, 1.0f, 0.5f);
 
     public Quad()
     {

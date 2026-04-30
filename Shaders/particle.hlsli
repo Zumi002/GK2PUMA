@@ -15,4 +15,5 @@ struct PS_INPUT
     float2 UV : TEXCOORD0;
     float AgeAlpha : COLOR0;
     float Texture : TEX;
+    float ClipDist : SV_ClipDistance0;
 };
