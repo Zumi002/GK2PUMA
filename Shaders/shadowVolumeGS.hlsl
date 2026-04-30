@@ -5,6 +5,7 @@ cbuffer ConstantBufferCamera : register(b1)
 {
     matrix View;
     matrix Projection;
+    float3 Pos;
 }
 
 float4 Transform(float3 vert)
@@ -13,6 +14,7 @@ float4 Transform(float3 vert)
     return mul(Projection, v);
 }
 
+static const float EPS = 0.01;
 static const float SHADOW_LENGTH = 100.0;
 
 void EmitQuad(float3 edgeStart, float3 edgeEnd, float3 startDir, float3 endDir, inout TriangleStream<PS_INPUT> output)

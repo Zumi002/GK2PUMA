@@ -7,6 +7,7 @@ using Vortice.Direct3D11;
 using Vortice.DXGI;
 
 using StbImageSharp;
+using Silk.NET.Input;
 
 namespace GK2PUMA.Entities;
 
@@ -38,18 +39,19 @@ public class ParticleEmitter : Entity
     private ID3D11Buffer _instanceBuffer;
     private ID3D11ShaderResourceView _particleTexture;
 
-    private const int MaxParticles = 1000;
-
+    private const int MaxParticles = 200;
+    private bool _animating;
+    private bool _pressingN;
     public ParticleEmitter()
     {
         var device = GI.Instance.Device;
 
-        var quadVertices = new Vertex[]
+        var quadVertices = new VertexPosition[]
         {
-            new Vertex(new Vector3(-0.5f, -0.5f, 0), new Vector3(0, 1, 0)),
-            new Vertex(new Vector3(-0.5f,  0.5f, 0), new Vector3(0, 0, 0)),
-            new Vertex(new Vector3( 0.5f,  0.5f, 0), new Vector3(1, 0, 0)),
-            new Vertex(new Vector3( 0.5f, -0.5f, 0), new Vector3(1, 1, 0)), 
+            new VertexPosition(new Vector3(0f, 0f, 0f)),
+            new VertexPosition(new Vector3(0f, 1f, 0f)),
+            new VertexPosition(new Vector3(1f, 1f, 0f)),
+            new VertexPosition(new Vector3(1f, 0f, 0f)),
         };
         var quadIndices = new uint[] { 0, 1, 2, 0, 2, 3 };
         _quadMesh = new Mesh(quadVertices, quadIndices);
@@ -65,17 +67,24 @@ public class ParticleEmitter : Entity
         };
         _instanceBuffer = device.CreateBuffer(bufferDesc);
 
-        using Stream textureStream = Resources.GetResourceStream("GK2PUMA.Textures.tex.png"); 
-        _particleTexture = LoadTextureFromStream(device, textureStream);
+        using Stream textureStream = Resources.GetResourceStream($"{GI.TextureBasePath}rain.png"); 
+        _particleTexture = GI.Instance.LoadTextureFromStream(textureStream);
+        _animating = false;
+        _pressingN = false;
     }
 
     public override void Update(float dt)
     {
+        if (!_animating)
+        {
+            return;
+        }
+
         for (int i = _sparks.Count - 1; i >= 0; i--)
         {
             var spark = _sparks[i];
             spark.PreviousPosition = spark.Position;
-            spark.Velocity += new Vector3(0, -9.81f*0.5f, 0) * dt;
+            spark.Velocity += new Vector3(0, -9.81f*0.1f, 0) * dt;
             spark.Position += spark.Velocity * dt;
             spark.Age += dt;
 
@@ -85,7 +94,7 @@ public class ParticleEmitter : Entity
             }
         }
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 1; i++)
         {
             if (_sparks.Count + 1 >= MaxParticles)
             {
@@ -98,7 +107,7 @@ public class ParticleEmitter : Entity
                 (float)_rand.NextDouble() - 0.5f
             );
 
-            Vector3 startVelocity = Vector3.Normalize(Vector3.One + randomOffset*3f) * (2.0f + (float)_rand.NextDouble() * 3.0f);
+            Vector3 startVelocity = Vector3.Normalize(Vector3.One + randomOffset*3f) * (2.0f + (float)_rand.NextDouble() * 3.0f) * 1f;
 
             _sparks.Add(new Particle
             {
@@ -108,6 +117,23 @@ public class ParticleEmitter : Entity
                 Age = 0.0f,
                 MaxAge = 2.0f + (float)_rand.NextDouble()
             });
+        }
+    }
+
+    public override void HandleInput(IKeyboard keyboard, IMouse mouse, float dt)
+    {
+        if (keyboard.IsKeyPressed(Key.N))
+        {
+            if (!_pressingN)
+            {
+                _animating = !_animating;
+            }
+
+            _pressingN = true;
+        }
+        else
+        {
+            _pressingN = false;
         }
     }
 
@@ -158,34 +184,5 @@ public class ParticleEmitter : Entity
         _quadMesh.Dispose();
         _instanceBuffer.Dispose();
         _particleTexture?.Dispose();
-    }
-
-    private ID3D11ShaderResourceView LoadTextureFromStream(ID3D11Device device, Stream stream)
-    {
-        var image = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
-
-        var textureDesc = new Texture2DDescription
-        {
-            Width = (uint)image.Width,
-            Height = (uint)image.Height,
-            MipLevels = 1,
-            ArraySize = 1,
-            Format = Format.R8G8B8A8_UNorm,
-            SampleDescription = new SampleDescription(1, 0),
-            Usage = ResourceUsage.Immutable,
-            BindFlags = BindFlags.ShaderResource,
-            CPUAccessFlags = CpuAccessFlags.None,
-            MiscFlags = ResourceOptionFlags.None
-        };
-
-        unsafe
-        {
-            fixed (byte* ptr = image.Data)
-            {
-                var data = new SubresourceData((IntPtr)ptr, (uint)image.Width * 4);
-                using var texture = device.CreateTexture2D(textureDesc, new[] { data });
-                return device.CreateShaderResourceView(texture);
-            }
-        }
     }
 }

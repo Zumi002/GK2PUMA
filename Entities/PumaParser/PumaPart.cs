@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Numerics;
 
 using GK2PUMA.Graphics;
-using GK2PUMA.Rendering;
 
 namespace GK2PUMA.Entities.PumaParser;
 

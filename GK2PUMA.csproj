@@ -22,6 +22,7 @@
     <None Remove="Shaders\tex.png" />
     <None Remove="Shaders\unlitPS.hlsl" />
     <None Remove="Shaders\unlitVS.hlsl" />
+    <None Remove="Textures\rain.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,7 +41,7 @@
     <EmbeddedResource Include="Shaders\shadowVolume.hlsli" />
     <EmbeddedResource Include="Shaders\shadowVolumeGS.hlsl" />
     <EmbeddedResource Include="Shaders\shadowVolumeVS.hlsl" />
-    <EmbeddedResource Include="Textures\tex.png" />
+    <EmbeddedResource Include="Textures\rain.png" />
     <EmbeddedResource Include="Shaders\unlitPS.hlsl" />
     <EmbeddedResource Include="Shaders\unlitVS.hlsl" />
   </ItemGroup>

@@ -388,11 +388,6 @@ public class RenderingPipeline : IDisposable
 
         foreach (var cmd in _opaques.Where(cmd => cmd.CastsShadows))
         {
-            if (!cmd.CastsShadows)
-            {
-                continue;
-            }
-
             _modelBuffer.Update(new ConstantBufferModel
             {
                 Model = cmd.Transform,
@@ -405,11 +400,6 @@ public class RenderingPipeline : IDisposable
 
         foreach (var cmd in _mirrors.Where(cmd => cmd.CastsShadows))
         {
-            if (!cmd.CastsShadows)
-            {
-                continue;
-            }
-
             _modelBuffer.Update(new ConstantBufferModel
             {
                 Model = cmd.Transform,
@@ -437,7 +427,6 @@ public class RenderingPipeline : IDisposable
         _colorBuffer.Bind(2);
         GI.Instance.LightManager.Bind(3);
 
-
         void DrawVolumes(Vector4 debugColor, ID3D11RasterizerState cullState)
         {
             context.RSSetState(cullState);
@@ -449,9 +438,6 @@ public class RenderingPipeline : IDisposable
 
             foreach (var cmd in _opaques.Where(cmd => cmd.CastsShadows))
             {
-                    continue;
-                }
-
                 _modelBuffer.Update(new ConstantBufferModel
                 {
                     Model = cmd.Transform,
@@ -464,9 +450,6 @@ public class RenderingPipeline : IDisposable
 
             foreach (var cmd in _mirrors.Where(cmd => cmd.CastsShadows))
             {
-                    continue;
-                }
-
                 _modelBuffer.Update(new ConstantBufferModel
                 {
                     Model = cmd.Transform,
@@ -492,7 +475,7 @@ public class RenderingPipeline : IDisposable
         {
             return;
         }
-
+        camera.UpdateAndBindViewProjBuffer();
         context.RSSetState(_cullNoneState);
         context.OMSetDepthStencilState(_noDepthWriteState, 0);
         context.OMSetBlendState(_additiveBlendState);

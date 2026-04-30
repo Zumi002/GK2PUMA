@@ -1,10 +1,11 @@
 ﻿using System.Numerics;
+using System.Runtime.InteropServices;
 
-using Vortice.Direct3D;
 using Vortice.Direct3D11;
 
 namespace GK2PUMA.Graphics;
 
+[StructLayout(LayoutKind.Sequential)]
 public struct Vertex
 {
     public Vector3 Position;
@@ -17,6 +18,17 @@ public struct Vertex
     }
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct VertexPosition
+{
+    public Vector3 Position;
+
+    public VertexPosition(Vector3 position)
+    {
+        Position = position;
+    }
+}
+
 public class Mesh : IDisposable
 {
     public ID3D11Buffer VertexBuffer { get; private set; }
@@ -25,7 +37,7 @@ public class Mesh : IDisposable
 
     public int IndexCount { get; private set; }
     public int AdjacencyIndexCount { get; }
-
+    public readonly uint Stride;
     public Mesh(Vertex[] vertices, uint[] indices, uint[]? adjacencyIndices = null)
     {
         var device = GI.Instance.Device;
@@ -39,13 +51,31 @@ public class Mesh : IDisposable
             AdjacencyIndexBuffer = device.CreateBuffer(adjacencyIndices, BindFlags.IndexBuffer);
             AdjacencyIndexCount = adjacencyIndices.Length;
         }
+
+        Stride = 24;
+    }
+    public Mesh(VertexPosition[] vertices, uint[] indices, uint[]? adjacencyIndices = null)
+    {
+        var device = GI.Instance.Device;
+
+        VertexBuffer = device.CreateBuffer(vertices, BindFlags.VertexBuffer);
+        IndexBuffer = device.CreateBuffer(indices, BindFlags.IndexBuffer);
+        IndexCount = indices.Length;
+
+        if (adjacencyIndices != null && adjacencyIndices.Length > 0)
+        {
+            AdjacencyIndexBuffer = device.CreateBuffer(adjacencyIndices, BindFlags.IndexBuffer);
+            AdjacencyIndexCount = adjacencyIndices.Length;
+        }
+
+        Stride = 12;
     }
 
     public void Bind(bool useAdjacency = false)
     {
         var context = GI.Instance.Context;
 
-        context.IASetVertexBuffer(0, VertexBuffer, 24, 0);
+        context.IASetVertexBuffer(0, VertexBuffer, Stride, 0);
 
         if (useAdjacency && AdjacencyIndexBuffer != null)
         {

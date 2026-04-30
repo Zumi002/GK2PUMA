@@ -113,7 +113,6 @@ internal class Program
         var particleInputElements = new[]
         {
             new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0, InputClassification.PerVertexData, 0),
-            new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 12, 0, InputClassification.PerVertexData, 0),
 
             new InputElementDescription("INSTANCE_CURRPOS", 0, Format.R32G32B32_Float, 0,  1, InputClassification.PerInstanceData, 1),
             new InputElementDescription("INSTANCE_AGE",     0, Format.R32_Float,       12, 1, InputClassification.PerInstanceData, 1),

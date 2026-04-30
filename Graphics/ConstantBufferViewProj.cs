@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 
 namespace GK2PUMA.Graphics;
@@ -8,4 +9,5 @@ public struct ConstantBufferViewProj
 {
     public Matrix4x4 View;
     public Matrix4x4 Projection;
+    public Vector3 Pos;
 }

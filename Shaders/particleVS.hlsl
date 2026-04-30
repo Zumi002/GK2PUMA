@@ -2,12 +2,12 @@
 {
     matrix View;
     matrix Projection;
+    float3 CamPos;
 }
 
 struct VS_INPUT
 {
     float3 Pos : POSITION0;
-    float2 UV : TEXCOORD0;
     
     float3 CurrentPos : INSTANCE_CURRPOS;
     float Age : INSTANCE_AGE;
@@ -26,15 +26,26 @@ PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output;
 
-    float3 basePos = lerp(input.PreviousPos, input.CurrentPos, input.UV.x);
-    
-    float thickness = 0.05f;
-    basePos += float3(0.0f, 1.0f, 0.0f) * (input.UV.y * thickness);
+    float3 velocity = input.CurrentPos - input.PreviousPos;
+    float3 dir = normalize(velocity);
 
-    float4 v = mul(View, float4(basePos, 1.0f));
+    float3 basePos = input.PreviousPos + velocity * 0.5f;
+
+    float3 cameraPos = CamPos;
+    float3 viewDir = normalize(cameraPos - basePos);
+
+    float3 Ydir = normalize(cross(viewDir, dir));
+
+    float XThickness = 0.2f;
+    float YThickness = 0.04f;
+
+    float2 centeredUV = input.Pos.xy * 2.0f - 1.0f;
+    float3 pos = basePos + (centeredUV.x * XThickness * dir) + (centeredUV.y * YThickness * Ydir);
+
+    float4 v = mul(View, float4(pos, 1));
     output.Pos = mul(Projection, v);
     
-    output.UV = input.UV;
+    output.UV = input.Pos.xy;
     output.AgeAlpha = saturate(1.0f - (input.Age / input.MaxAge));
 
     return output;
