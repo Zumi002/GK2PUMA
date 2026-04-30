@@ -40,8 +40,9 @@ public class ParticleEmitter : Entity
     private ID3D11ShaderResourceView _particleTexture;
 
     private const int MaxParticles = 500;
-    private const float ParticlesPerSecond = 2;
-    private const float ParticleMaxAgeInSeconds = 1;
+    private const float ParticlesPerSecond = 100;
+    private const float ParticleMaxAgeInSeconds = 0.4f;
+    private float _particlesToCreate;
 
     public bool Animating;
     public Vertex PositonNormal;
@@ -71,7 +72,7 @@ public class ParticleEmitter : Entity
         };
         _instanceBuffer = device.CreateBuffer(bufferDesc);
 
-        using Stream textureStream = Resources.GetResourceStream($"{GI.TextureBasePath}rain.png"); 
+        using Stream textureStream = Resources.GetResourceStream($"{GI.TextureBasePath}rain3.png"); 
         _particleTexture = GI.Instance.LoadTextureFromStream(textureStream);
     }
 
@@ -91,7 +92,7 @@ public class ParticleEmitter : Entity
         {
             var particle = _particles[i];
             particle.PreviousPosition = particle.Position;
-            particle.Velocity += new Vector3(0, -9.81f*0.5f, 0) * dt;
+            particle.Velocity += new Vector3(0, -9.81f*0.4f, 0) * dt;
             particle.Position += particle.Velocity * dt;
             particle.Age += dt;
 
@@ -101,11 +102,14 @@ public class ParticleEmitter : Entity
             }
         }
 
-        for (int i = 0; i < 1; i++)
+        _particlesToCreate += dt * ParticlesPerSecond;
+
+        while (_particlesToCreate > 1.0f)
         {
+            _particlesToCreate -= 1.0f;
             if (_particles.Count + 1 >= MaxParticles)
             {
-                break;
+                continue;
             }
 
             Vector3 randomOffset = new Vector3(
@@ -114,7 +118,7 @@ public class ParticleEmitter : Entity
                 (float)_rand.NextDouble() - 0.5f
             );
 
-            Vector3 startVelocity = Vector3.Normalize(PositonNormal.Normal + Vector3.Normalize(randomOffset)) * (2f + (float)_rand.NextDouble() * 1f);
+            Vector3 startVelocity = Vector3.Normalize(PositonNormal.Normal + randomOffset*1.5f) * (2.5f + (float)_rand.NextDouble() * 1f);
 
             _particles.Add(new Particle
             {

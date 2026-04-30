@@ -29,18 +29,18 @@ PS_INPUT VS(VS_INPUT input)
     float3 velocity = input.CurrentPos - input.PreviousPos;
     float3 dir = normalize(velocity);
 
-    float3 basePos = input.PreviousPos + velocity * 0.5f;
+    float3 basePos = input.PreviousPos;
 
     float3 cameraPos = CamPos;
     float3 viewDir = normalize(cameraPos - basePos);
 
     float3 Ydir = normalize(cross(viewDir, dir));
 
-    float XThickness = 0.2f;
+    float XThickness = 0.4f;
     float YThickness = 0.04f;
 
-    float2 centeredUV = input.Pos.xy * 2.0f - 1.0f;
-    float3 pos = basePos + (centeredUV.x * XThickness * dir) + (centeredUV.y * YThickness * Ydir);
+    float centeredV = input.Pos.y * 2.0f - 1.0f;
+    float3 pos = basePos + (input.Pos.x * XThickness * dir) + (centeredV * YThickness * Ydir);
 
     float4 v = mul(View, float4(pos, 1));
     output.Pos = mul(Projection, v);

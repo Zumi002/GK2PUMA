@@ -521,6 +521,7 @@ public class RenderingPipeline : IDisposable
         _mirrorCamera?.Dispose();
         _defaultDepthState?.Dispose();
         _noDepthState?.Dispose();
+        _noDepthWriteState?.Dispose();
         _cullBackState?.Dispose();
         _cullFrontState?.Dispose();
         _shadowVolumeDepthState?.Dispose();
