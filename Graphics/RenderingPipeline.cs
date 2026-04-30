@@ -34,7 +34,7 @@ public struct ParticleCommand
     public Mesh Mesh;
     public ID3D11Buffer InstanceBuffer;
     public int InstanceCount;
-    public ID3D11ShaderResourceView? Texture;
+    public ID3D11ShaderResourceView[]? Textures;
 }
 
 public class RenderingPipeline : IDisposable
@@ -218,14 +218,14 @@ public class RenderingPipeline : IDisposable
         );
     }
 
-    public void SubmitParticle(Mesh mesh, ID3D11Buffer instanceBuffer, int instanceCount, ID3D11ShaderResourceView? texture = null)
+    public void SubmitParticle(Mesh mesh, ID3D11Buffer instanceBuffer, int instanceCount, ID3D11ShaderResourceView[]? textures = null)
     {
         _particles.Add(
             new ParticleCommand {
                 Mesh = mesh,
                 InstanceBuffer = instanceBuffer,
                 InstanceCount = instanceCount,
-                Texture = texture 
+                Textures = textures
             }
         );
     }
@@ -492,9 +492,9 @@ public class RenderingPipeline : IDisposable
                 continue;
             }
 
-            if (cmd.Texture != null)
+            if (cmd.Textures != null)
             {
-                context.PSSetShaderResources(0, new[] { cmd.Texture });
+                context.PSSetShaderResources(0, cmd.Textures);
                 context.PSSetSamplers(0, new[] { GI.Instance.DefaultSampler });
             }
 

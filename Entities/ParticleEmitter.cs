@@ -18,6 +18,7 @@ public struct ParticleInstance
     public float Age;
     public Vector3 PreviousPos;
     public float MaxAge;
+    public float Texture;
 }
 
 public class Particle
@@ -27,6 +28,7 @@ public class Particle
     public Vector3 Velocity;
     public float Age;
     public float MaxAge;
+    public float Texture;
     public bool IsAlive => Age < MaxAge;
 }
 
@@ -37,7 +39,7 @@ public class ParticleEmitter : Entity
 
     private Mesh _quadMesh;
     private ID3D11Buffer _instanceBuffer;
-    private ID3D11ShaderResourceView _particleTexture;
+    private ID3D11ShaderResourceView[] _particleTextures;
 
     private const int MaxParticles = 500;
     private const float ParticlesPerSecond = 100;
@@ -72,8 +74,12 @@ public class ParticleEmitter : Entity
         };
         _instanceBuffer = device.CreateBuffer(bufferDesc);
 
-        using Stream textureStream = Resources.GetResourceStream($"{GI.TextureBasePath}rain3.png"); 
-        _particleTexture = GI.Instance.LoadTextureFromStream(textureStream);
+        _particleTextures = new ID3D11ShaderResourceView[2];
+
+        using Stream textureStream = Resources.GetResourceStream($"{GI.TextureBasePath}rain3.png");
+        _particleTextures[0] = GI.Instance.LoadTextureFromStream(textureStream);
+        using Stream textureStream2 = Resources.GetResourceStream($"{GI.TextureBasePath}rain.png");
+        _particleTextures[1] = GI.Instance.LoadTextureFromStream(textureStream2);
     }
 
     public void SetEmitterPositionAndNormal(Vertex positionNormal)
@@ -126,7 +132,8 @@ public class ParticleEmitter : Entity
                 PreviousPosition = PositonNormal.Position,
                 Velocity = startVelocity,
                 Age = 0.0f,
-                MaxAge = ParticleMaxAgeInSeconds + (float)_rand.NextDouble()
+                MaxAge = ParticleMaxAgeInSeconds + (float)_rand.NextDouble(),
+                Texture = (float)_rand.Next(2)
             });
         }
     }
@@ -141,7 +148,8 @@ public class ParticleEmitter : Entity
                 CurrentPos = _particles[i].Position,
                 PreviousPos = _particles[i].PreviousPosition,
                 Age = _particles[i].Age,
-                MaxAge = _particles[i].MaxAge
+                MaxAge = _particles[i].MaxAge,
+                Texture = _particles[i].Texture,
             };
         }
 
@@ -170,13 +178,16 @@ public class ParticleEmitter : Entity
             context.Unmap(_instanceBuffer, 0);
         }
 
-        GI.Instance.Pipeline.SubmitParticle(_quadMesh, _instanceBuffer, _particles.Count, _particleTexture);
+        GI.Instance.Pipeline.SubmitParticle(_quadMesh, _instanceBuffer, _particles.Count, _particleTextures);
     }
 
     public void Dispose()
     {
         _quadMesh.Dispose();
         _instanceBuffer.Dispose();
-        _particleTexture?.Dispose();
+        foreach (var texture in _particleTextures)
+        {
+            texture.Dispose();
+        }
     }
 }

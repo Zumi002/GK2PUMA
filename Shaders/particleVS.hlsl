@@ -13,6 +13,7 @@ struct VS_INPUT
     float Age : INSTANCE_AGE;
     float3 PreviousPos : INSTANCE_PREVPOS;
     float MaxAge : INSTANCE_MAXAGE;
+    float Texture : INSTANCE_TEXTURE;
 };
 
 struct PS_INPUT
@@ -20,6 +21,7 @@ struct PS_INPUT
     float4 Pos : SV_POSITION;
     float2 UV : TEXCOORD0;
     float AgeAlpha : COLOR0;
+    float Texture : TEX;
 };
 
 PS_INPUT VS(VS_INPUT input)
@@ -47,6 +49,7 @@ PS_INPUT VS(VS_INPUT input)
     
     output.UV = input.Pos.xy;
     output.AgeAlpha = saturate(1.0f - (input.Age / input.MaxAge));
-
+    output.Texture = input.Texture;
+    
     return output;
 }

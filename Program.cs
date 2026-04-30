@@ -117,7 +117,8 @@ internal class Program
             new InputElementDescription("INSTANCE_CURRPOS", 0, Format.R32G32B32_Float, 0,  1, InputClassification.PerInstanceData, 1),
             new InputElementDescription("INSTANCE_AGE",     0, Format.R32_Float,       12, 1, InputClassification.PerInstanceData, 1),
             new InputElementDescription("INSTANCE_PREVPOS", 0, Format.R32G32B32_Float, 16, 1, InputClassification.PerInstanceData, 1),
-            new InputElementDescription("INSTANCE_MAXAGE",  0, Format.R32_Float,       28, 1, InputClassification.PerInstanceData, 1)
+            new InputElementDescription("INSTANCE_MAXAGE",  0, Format.R32_Float,       28, 1, InputClassification.PerInstanceData, 1),
+            new InputElementDescription("INSTANCE_TEXTURE",  0, Format.R32_Float,       32, 1, InputClassification.PerInstanceData, 1)
         };
 
         var particleShader = new Shader(
