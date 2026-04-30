@@ -65,6 +65,7 @@ public class RenderingPipeline : IDisposable
     private ID3D11DepthStencilState? _mirrorStencilWriteState;
     /// Depth test-write and stencil test == ref
     private ID3D11DepthStencilState? _mirrorGPassDepthState;
+    private ID3D11DepthStencilState? _mirrorNoDepthWriteState;
 
     private Camera? _mirrorCamera;
 
@@ -181,6 +182,31 @@ public class RenderingPipeline : IDisposable
             }
         };
         _lightPassDepthState = device.CreateDepthStencilState(lightPassDepthDesc);
+        
+        var mirrorNoDepthWriteDesc = new DepthStencilDescription
+        {
+            DepthEnable = true,
+            DepthWriteMask = DepthWriteMask.Zero,
+            DepthFunc = ComparisonFunction.LessEqual,
+            StencilEnable = true,
+            StencilReadMask = 0xFF,
+            StencilWriteMask = 0x00,
+            FrontFace = new DepthStencilOperationDescription
+            {
+                StencilFailOp = StencilOperation.Keep,
+                StencilDepthFailOp = StencilOperation.Keep,
+                StencilPassOp = StencilOperation.Keep,
+                StencilFunc = ComparisonFunction.Equal
+            },
+            BackFace = new DepthStencilOperationDescription
+            {
+                StencilFailOp = StencilOperation.Keep,
+                StencilDepthFailOp = StencilOperation.Keep,
+                StencilPassOp = StencilOperation.Keep,
+                StencilFunc = ComparisonFunction.Equal
+            }
+        };
+        _mirrorNoDepthWriteState = device.CreateDepthStencilState(mirrorNoDepthWriteDesc);
 
         var additiveBlendDesc = new BlendDescription();
         additiveBlendDesc.RenderTarget[0] = new RenderTargetBlendDescription
@@ -366,7 +392,7 @@ public class RenderingPipeline : IDisposable
             RenderMirrorGPass(context, _mirrorCamera, mainCamera, mirrorCommand, stencilRef);
             RenderMirrorShadowVolume(context, _mirrorCamera);
             RenderMirrorLightPass(context, _mirrorCamera, stencilRef);
-            RenderMirrorParticles(context, _mirrorCamera);
+            RenderMirrorParticles(context, mainCamera, _mirrorCamera, stencilRef);
             RenderMirrorSurface(context, mainCamera, mirrorCommand, stencilRef);
         }
 
@@ -505,9 +531,44 @@ public class RenderingPipeline : IDisposable
         context.OMSetBlendState(null);
     }
 
-    private void RenderMirrorParticles(ID3D11DeviceContext context, Camera mirrorCamera)
+    private void RenderMirrorParticles(ID3D11DeviceContext context, Camera mainCamera, Camera mirrorCamera, uint stencilRef)
     {
         // TODO: implement
+        if (_particles.Count == 0)
+        {
+            return;
+        }
+
+        mirrorCamera.UpdateAndBindViewProjBuffer(mainCamera.Position);
+        context.RSSetState(_cullNoneState);
+        context.OMSetDepthStencilState(_mirrorNoDepthWriteState, stencilRef);
+        context.OMSetBlendState(_additiveBlendState);
+        context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
+
+        var particleShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.Particle);
+        particleShader.Use();
+
+        foreach (var cmd in _particles)
+        {
+            if (cmd.InstanceCount == 0)
+            {
+                continue;
+            }
+
+            if (cmd.Textures != null)
+            {
+                context.PSSetShaderResources(0, cmd.Textures);
+                context.PSSetSamplers(0, new[] { GI.Instance.DefaultSampler });
+            }
+
+            cmd.Mesh.Bind();
+            context.IASetVertexBuffers(1, new[] { cmd.InstanceBuffer }, new[] { (uint)Marshal.SizeOf<ParticleInstance>() }, new[] { 0u });
+            context.DrawIndexedInstanced((uint)cmd.Mesh.IndexCount, (uint)cmd.InstanceCount, 0, 0, 0);
+        }
+
+        context.IASetVertexBuffers(1, new ID3D11Buffer[] { null }, new[] { 0u }, new[] { 0u });
+        context.OMSetBlendState(null);
+        
     }
 
     private void RenderMirrorSurface(ID3D11DeviceContext context, Camera mainCamera, MirrorCommand mirrorCommand, uint stencilRef)
@@ -749,5 +810,6 @@ public class RenderingPipeline : IDisposable
         _alphaBlendState?.Dispose();
         _mirrorStencilWriteState?.Dispose();
         _mirrorGPassDepthState?.Dispose();
+        _mirrorNoDepthWriteState?.Dispose();
     }
 }

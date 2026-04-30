@@ -134,6 +134,17 @@ public class Camera : Entity, IDisposable
         }
     }
 
+    public void UpdateAndBindViewProjBuffer(Vector3 pos)
+    {
+        _viewProjBuffer.Update(new ConstantBufferViewProj
+        {
+            View = ViewMatrix,
+            Projection = ProjectionMatrix,
+            Pos = pos,
+        });
+        _viewProjBuffer.Bind(1);
+    }
+    
     public void UpdateAndBindViewProjBuffer()
     {
         _viewProjBuffer.Update(new ConstantBufferViewProj
