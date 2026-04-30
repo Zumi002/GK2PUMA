@@ -4,10 +4,6 @@ using System.Runtime.InteropServices;
 using GK2PUMA.Graphics;
 
 using Vortice.Direct3D11;
-using Vortice.DXGI;
-
-using StbImageSharp;
-using Silk.NET.Input;
 
 namespace GK2PUMA.Entities;
 
@@ -32,7 +28,7 @@ public class Particle
     public bool IsAlive => Age < MaxAge;
 }
 
-public class ParticleEmitter : Entity    
+public class ParticleEmitter : Entity, IDisposable
 {
     private readonly List<Particle> _particles = new();
     private readonly Random _rand = new();
@@ -49,6 +45,7 @@ public class ParticleEmitter : Entity
     public bool Animating;
     public Vertex PositonNormal;
 
+    private bool _disposing = false;
     public ParticleEmitter()
     {
         var device = GI.Instance.Device;
@@ -183,11 +180,16 @@ public class ParticleEmitter : Entity
 
     public void Dispose()
     {
-        _quadMesh.Dispose();
-        _instanceBuffer.Dispose();
-        foreach (var texture in _particleTextures)
+        if (!_disposing)
         {
-            texture.Dispose();
+            _quadMesh.Dispose();
+            _instanceBuffer.Dispose();
+            foreach (var texture in _particleTextures)
+            {
+                texture.Dispose();
+            }
+
+            _disposing = true;
         }
     }
 }
