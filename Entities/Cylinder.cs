@@ -6,8 +6,8 @@ namespace GK2PUMA.Entities;
 
 public sealed class Cylinder : Entity, IDisposable
 {
-    public const int CylinderLidMeshPrecision = 256;
-    public const int CylinderWidthMeshPrecision = 256;
+    public const int CylinderLidMeshPrecision = 32;
+    public const int CylinderWidthMeshPrecision = 1;
 
     private readonly Mesh _mesh;
     public readonly Transform Transform = new();

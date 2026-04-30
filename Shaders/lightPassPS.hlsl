@@ -9,6 +9,7 @@ cbuffer ConstantBufferCamera : register(b1)
 {
     matrix View;
     matrix Projection;
+    float3 CamPos;
 }
 
 struct PS_INPUT
@@ -34,7 +35,7 @@ float4 PS(PS_INPUT input) : SV_Target
     float3 normal = NormalMap.Sample(Sampler, input.TexCoord).xyz;
     float3 worldPos = WorldPosMap.Sample(Sampler, input.TexCoord).xyz;
 
-    float3 cameraPos = mul(-View[3].xyz, (float3x3) View);
+    float3 cameraPos = CamPos;
     float3 viewDir = normalize(cameraPos - worldPos);
 
     float kd = 0.8;

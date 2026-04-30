@@ -46,7 +46,13 @@ public sealed class Puma : Entity, IDisposable
         set;
     }
 
-    public Puma(string meshFolder = "Meshes", Quad? sheet = null)
+    public ParticleEmitter? ParticleEmitter
+    {
+        get;
+        set;
+    }
+
+    public Puma(string meshFolder = "Meshes", Quad? sheet = null, ParticleEmitter? particleEmitter = null)
     {
         Sheet = sheet;
         for (int i = 0; i < PartCount; i++)
@@ -61,6 +67,8 @@ public sealed class Puma : Entity, IDisposable
                 Transforms[i].Position = PivotPoints[i] - PivotPoints[i - 1];
             }
         }
+
+        ParticleEmitter = particleEmitter;
     }
 
     public override void Render(Camera camera)
@@ -161,6 +169,7 @@ public sealed class Puma : Entity, IDisposable
             if (!s_wasCDown)
             {
                 _animating = !_animating;
+                ParticleEmitter.Animating = _animating;
             }
 
             s_wasCDown = true;
@@ -228,13 +237,7 @@ public sealed class Puma : Entity, IDisposable
         Transforms[5].Rotation = new Vector3(0.0f, 0.0f, angles.A5);
     }
 
-    private record PositionAndNormal(Vector3 Position, Vector3 Normal)
-    {
-        public readonly Vector3 Position = Position;
-        public readonly Vector3 Normal = Normal;
-    }
-
-    private static PositionAndNormal SampleSheetCircle(float radius, float theta, Quad sheet)
+    private static Vertex SampleSheetCircle(float radius, float theta, Quad sheet)
     {
         var defaultUVector = new Vector3(1.0f, 0.0f, 0.0f);
         var defaultVVector = new Vector3(0.0f, 1.0f, 0.0f);
@@ -249,12 +252,17 @@ public sealed class Puma : Entity, IDisposable
         var tipPosition = transformedPosition +
                           radius * MathF.Cos(theta) * transformedUVector +
                           radius * MathF.Sin(theta) * transformedVVector;
-        return new PositionAndNormal(tipPosition, transformedNormal);
+        return new Vertex(tipPosition, transformedNormal);
     }
 
     private void TrackSheetCircle(float radius, float theta, Quad sheet)
     {
-        var (position, normal) = SampleSheetCircle(radius, theta, sheet);
-        ApplyIk(position, normal);
+        var vertex = SampleSheetCircle(radius, theta, sheet);
+        ApplyIk(vertex.Position, vertex.Normal);
+
+        if (ParticleEmitter != null)
+        {
+            ParticleEmitter.SetEmitterPositionAndNormal(vertex);
+        }
     }
 }

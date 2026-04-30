@@ -11,6 +11,7 @@ public class ShaderManager
         LightPass,
         AmbientPass,
         ShadowVolume,
+        Particle
     }
     
     private readonly Dictionary<ShaderType, Shader> _shaders = new();
