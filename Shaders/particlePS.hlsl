@@ -1,14 +1,8 @@
-﻿Texture2D Texture : register(t0);
+﻿#include "particle.hlsli"
+
+Texture2D Texture : register(t0);
 Texture2D Texture2 : register(t1);
 SamplerState Sampler : register(s0);
-
-struct PS_INPUT
-{
-    float4 Pos : SV_POSITION;
-    float2 UV : TEXCOORD0;
-    float AgeAlpha : COLOR0;
-    float Texture : TEX;
-};
 
 float4 PS(PS_INPUT input) : SV_Target
 {

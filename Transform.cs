@@ -108,8 +108,6 @@ public class Transform
         }
     }
 
-    public bool IsDirty { get { return _isDirty; } }
-
     public delegate void MatricesRecalculated(Transform transform);
 
     public event MatricesRecalculated? OnMatricesRecalculated = delegate
