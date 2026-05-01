@@ -345,6 +345,9 @@ public class RenderingPipeline : IDisposable
         context.ClearDepthStencilView(GraphicsContext.Instance.DepthStencilView, DepthStencilClearFlags.Stencil, 1.0f, 0);
         context.ClearDepthStencilView(GraphicsContext.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
 
+        context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+        _modelBuffer.Bind(0);
+        _colorBuffer.Bind(2);
         uint stencilMirrorRef = 0;
         foreach (var mirrorCommand in _mirrors)
         {
@@ -374,10 +377,6 @@ public class RenderingPipeline : IDisposable
         RenderMirrorSurfaces(context, mainCamera);
         RenderParticles(context, mainCamera);
 
-        context.OMSetRenderTargets(0, null, null);
-
-        context.PSSetShaderResources(0, new ID3D11ShaderResourceView?[] { null, null, null, null });
-
         context.RSSetState(_cullBackState);
         context.OMSetBlendState(null);
         context.OMSetDepthStencilState(_defaultDepthState, 0);
@@ -387,24 +386,26 @@ public class RenderingPipeline : IDisposable
 
     private void RenderMirrorStencilPass(ID3D11DeviceContext context, Camera mainCamera, MirrorCommand mirrorCommand, uint stencilRef)
     {
-        context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
+        context.OMSetRenderTargets(GI.Instance.GBufferRTVs[0], GI.Instance.DepthStencilView);
         context.OMSetDepthStencilState(_stencilWriteState, stencilRef);
         context.RSSetState(_cullBackState);
 
-        var unlit = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.Unlit);
+        var unlit = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.Ambient);
         unlit.Use();
 
-        _modelBuffer.Bind(0);
         _modelBuffer.Update(new ConstantBufferModel
         {
             Model = mirrorCommand.Transform,
             ModelInv = mirrorCommand.InvTransform
         });
 
+
+
         mirrorCommand.Mesh.Bind();
         context.DrawIndexed((uint)mirrorCommand.Mesh.IndexCount, 0, 0);
-        context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilMirrorView);
+        context.OMSetRenderTargets(GI.Instance.GBufferRTVs[0], GI.Instance.DepthStencilMirrorView);
         context.OMSetDepthStencilState(_stencilWriteState, stencilRef);
+        mirrorCommand.Mesh.Bind();
         context.DrawIndexed((uint)mirrorCommand.Mesh.IndexCount, 0, 0);
     }
 
@@ -487,8 +488,6 @@ public class RenderingPipeline : IDisposable
         var gPassShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.GPass);
         gPassShader.Use();
 
-        _modelBuffer.Bind(0);
-        _colorBuffer.Bind(2);
         context.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
 
         foreach (var cmd in _opaques)
