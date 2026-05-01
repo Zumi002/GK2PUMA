@@ -6,6 +6,7 @@ public class ShaderManager
     public enum ShaderType
     {
         Unlit,
+        Ambient,
         BlinnPhong,
         GPass,
         LightPass,

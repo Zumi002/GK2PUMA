@@ -27,6 +27,7 @@ public struct MirrorCommand
     public Vector4 SurfaceColor;
     public ID3D11ShaderResourceView? Texture;
     public bool CastsShadows;
+    public float MirrorThickness;
 }
 
 public struct ParticleCommand
@@ -47,6 +48,10 @@ public class RenderingPipeline : IDisposable
     private ConstantBuffer<ConstantBufferSurfaceColor>? _colorBuffer;
 
     private ID3D11DepthStencilState? _defaultDepthState;
+    private ID3D11DepthStencilState? _depthStencilTestState;
+    private ID3D11DepthStencilState? _depthStencilAntiTestState;
+    private ID3D11DepthStencilState? _stencilWriteState;
+    private ID3D11DepthStencilState? _depthStencliWriteState;
     private ID3D11DepthStencilState? _noDepthState;
     private ID3D11DepthStencilState? _noDepthWriteState;
     private ID3D11RasterizerState? _cullBackState;
@@ -72,6 +77,92 @@ public class RenderingPipeline : IDisposable
             StencilEnable = false
         };
         _defaultDepthState = device.CreateDepthStencilState(depthDesc);
+
+        var depthStencilDesc = new DepthStencilDescription
+        {
+            DepthEnable = true,
+            DepthWriteMask = DepthWriteMask.All,
+            DepthFunc = ComparisonFunction.LessEqual,
+            StencilEnable = true,
+            StencilReadMask = 0xFF,
+            StencilWriteMask = 0x00,
+            FrontFace = new DepthStencilOperationDescription
+            {
+                StencilFailOp = StencilOperation.Keep,
+                StencilDepthFailOp = StencilOperation.Keep,
+                StencilPassOp = StencilOperation.Keep,
+                StencilFunc = ComparisonFunction.Equal
+            },
+            BackFace = new DepthStencilOperationDescription
+            {
+                StencilFailOp = StencilOperation.Keep,
+                StencilDepthFailOp = StencilOperation.Keep,
+                StencilPassOp = StencilOperation.Keep,
+                StencilFunc = ComparisonFunction.Equal
+            }
+        };
+        _depthStencilTestState = device.CreateDepthStencilState(depthStencilDesc);
+
+        var depthStencilAntiDesc = new DepthStencilDescription
+        {
+            DepthEnable = true,
+            DepthWriteMask = DepthWriteMask.All,
+            DepthFunc = ComparisonFunction.LessEqual,
+            StencilEnable = true,
+            StencilReadMask = 0xFF,
+            StencilWriteMask = 0x00,
+            FrontFace = new DepthStencilOperationDescription
+            {
+                StencilFailOp = StencilOperation.Keep,
+                StencilDepthFailOp = StencilOperation.Keep,
+                StencilPassOp = StencilOperation.Keep,
+                StencilFunc = ComparisonFunction.NotEqual
+            },
+            BackFace = new DepthStencilOperationDescription
+            {
+                StencilFailOp = StencilOperation.Keep,
+                StencilDepthFailOp = StencilOperation.Keep,
+                StencilPassOp = StencilOperation.Keep,
+                StencilFunc = ComparisonFunction.NotEqual
+            }
+        };
+        _depthStencilAntiTestState = device.CreateDepthStencilState(depthStencilAntiDesc);
+
+        var stencilDesc = new DepthStencilDescription
+        {
+            DepthEnable = false,
+            DepthWriteMask = DepthWriteMask.Zero,
+            DepthFunc = ComparisonFunction.Always,
+            StencilEnable = true,
+            StencilReadMask = 0xFF,
+            StencilWriteMask = 0xFF,
+            FrontFace = new DepthStencilOperationDescription
+            {
+                StencilFailOp = StencilOperation.Keep,
+                StencilDepthFailOp = StencilOperation.Keep,
+                StencilPassOp = StencilOperation.Replace,
+                StencilFunc = ComparisonFunction.Always
+            },
+            BackFace = new DepthStencilOperationDescription
+            {
+                StencilFailOp = StencilOperation.Keep,
+                StencilDepthFailOp = StencilOperation.Keep,
+                StencilPassOp = StencilOperation.Replace,
+                StencilFunc = ComparisonFunction.Always
+            }
+        };
+        _stencilWriteState = device.CreateDepthStencilState(stencilDesc);
+
+        var stencilDepthDesc = new DepthStencilDescription
+        {
+            DepthEnable = false,
+            DepthWriteMask = DepthWriteMask.Zero,
+            DepthFunc = ComparisonFunction.Always,
+            StencilEnable = false,
+            StencilReadMask = 0xFF,
+            StencilWriteMask = 0xFF,
+        };
+        _stencilWriteState = device.CreateDepthStencilState(stencilDesc);
 
         var noDepthDesc = new DepthStencilDescription
         {
@@ -219,7 +310,7 @@ public class RenderingPipeline : IDisposable
         );
     }
 
-    public void SubmitMirror(Mesh mesh, Matrix4x4 transform, Matrix4x4 invTransform, Vector4 color, ID3D11ShaderResourceView? texture = null, bool castsShadows = true)
+    public void SubmitMirror(Mesh mesh, Matrix4x4 transform, Matrix4x4 invTransform, Vector4 color, float mirrorThickness = 0, ID3D11ShaderResourceView? texture = null, bool castsShadows = true)
     {
         _mirrors.Add(
             new MirrorCommand {
@@ -228,7 +319,8 @@ public class RenderingPipeline : IDisposable
                 InvTransform = invTransform,
                 SurfaceColor = color,
                 Texture = texture,
-                CastsShadows = castsShadows
+                CastsShadows = castsShadows,
+                MirrorThickness = mirrorThickness
             }
         );
     }
@@ -253,18 +345,22 @@ public class RenderingPipeline : IDisposable
         context.ClearDepthStencilView(GraphicsContext.Instance.DepthStencilView, DepthStencilClearFlags.Stencil, 1.0f, 0);
         context.ClearDepthStencilView(GraphicsContext.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
 
+        uint stencilMirrorRef = 0;
         foreach (var mirrorCommand in _mirrors)
         {
-            _mirrorCamera.UpdateAsMirror(mainCamera, mirrorCommand.Transform);
+            stencilMirrorRef++;
+            _mirrorCamera.UpdateAsMirror(mainCamera, mirrorCommand.Transform, mirrorThickness: mirrorCommand.MirrorThickness);
             _mirrorCamera.UpdateAndBindViewProjBuffer();
 
             context.ClearDepthStencilView(GraphicsContext.Instance.DepthStencilView, DepthStencilClearFlags.Stencil, 1.0f, 0);
+            context.ClearDepthStencilView(GraphicsContext.Instance.DepthStencilMirrorView, DepthStencilClearFlags.Stencil, 1.0f, 0);
+            context.ClearDepthStencilView(GraphicsContext.Instance.DepthStencilMirrorView, DepthStencilClearFlags.Depth, 1.0f, 0);
 
-            RenderGPass(context, _mirrorCamera, GI.Instance.DepthStencilMirrorView, inMirror: true);
+            RenderMirrorStencilPass(context, mainCamera, mirrorCommand, stencilMirrorRef);
+            RenderGPass(context, _mirrorCamera, GI.Instance.DepthStencilMirrorView, stencilMirrorRef, inMirror: true);
             RenderShadowVolume(context, _mirrorCamera, GI.Instance.DepthStencilMirrorView);
-            RenderMirrorStencilPass(context, mainCamera, mirrorCommand, 1);
-            RenderLightPass(context, _mirrorCamera, 1);
-            RenderParticles(context, _mirrorCamera, 1);
+            RenderLightPass(context, _mirrorCamera, stencilMirrorRef);
+            RenderParticles(context, _mirrorCamera, stencilMirrorRef);
         }
 
         context.ClearDepthStencilView(GraphicsContext.Instance.DepthStencilView, DepthStencilClearFlags.Stencil, 1.0f, 0);
@@ -280,14 +376,23 @@ public class RenderingPipeline : IDisposable
 
         context.OMSetRenderTargets(0, null, null);
 
+        context.PSSetShaderResources(0, new ID3D11ShaderResourceView?[] { null, null, null, null });
+
+        context.RSSetState(_cullBackState);
+        context.OMSetBlendState(null);
+        context.OMSetDepthStencilState(_defaultDepthState, 0);
+
         ClearQueues();
     }
 
     private void RenderMirrorStencilPass(ID3D11DeviceContext context, Camera mainCamera, MirrorCommand mirrorCommand, uint stencilRef)
     {
         context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
-        context.OMSetDepthStencilState(_defaultDepthState, stencilRef);
+        context.OMSetDepthStencilState(_stencilWriteState, stencilRef);
         context.RSSetState(_cullBackState);
+
+        var unlit = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.Unlit);
+        unlit.Use();
 
         _modelBuffer.Bind(0);
         _modelBuffer.Update(new ConstantBufferModel
@@ -298,6 +403,9 @@ public class RenderingPipeline : IDisposable
 
         mirrorCommand.Mesh.Bind();
         context.DrawIndexed((uint)mirrorCommand.Mesh.IndexCount, 0, 0);
+        context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilMirrorView);
+        context.OMSetDepthStencilState(_stencilWriteState, stencilRef);
+        context.DrawIndexed((uint)mirrorCommand.Mesh.IndexCount, 0, 0);
     }
 
     private void RenderMirrorSurfaces(ID3D11DeviceContext context, Camera mainCamera)
@@ -305,12 +413,11 @@ public class RenderingPipeline : IDisposable
         context.OMSetRenderTargets(GI.Instance.RenderTargetView, GI.Instance.DepthStencilView);
         context.OMSetBlendState(_alphaBlendState);
         context.RSSetState(_cullBackState);
-        context.OMSetDepthStencilState(_defaultDepthState, 0);
+        context.OMSetDepthStencilState(_depthStencilAntiTestState, 0);
 
-        var blinnPhong = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.BlinnPhong);
-        blinnPhong.Use();
-        _modelBuffer.Bind(0);
-        _colorBuffer.Bind(2);
+        var ambient = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.Ambient);
+        ambient.Use();
+       
         foreach (var cmd in _mirrors)
         {
             _modelBuffer.Update(new ConstantBufferModel
@@ -332,12 +439,41 @@ public class RenderingPipeline : IDisposable
             cmd.Mesh.Bind();
             context.DrawIndexed((uint)cmd.Mesh.IndexCount, 0, 0);
         }
+
+        context.OMSetDepthStencilState(_depthStencilTestState, 0);
+        var blinnPhong = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.BlinnPhong);
+        blinnPhong.Use();
+
+        foreach (var cmd in _mirrors)
+        {
+            _modelBuffer.Update(new ConstantBufferModel
+            {
+                Model = cmd.Transform,
+                ModelInv = cmd.InvTransform
+            });
+
+            _colorBuffer.Update(new ConstantBufferSurfaceColor
+            {
+                SurfaceColor = cmd.SurfaceColor
+            });
+
+            if (cmd.Texture != null)
+            {
+                context.PSSetShaderResources(0, new[] { cmd.Texture });
+            }
+
+            cmd.Mesh.Bind();
+            context.DrawIndexed((uint)cmd.Mesh.IndexCount, 0, 0);
+        }
+
+        context.OMSetBlendState(null);
+        context.RSSetState(_cullBackState);
     }
 
-    private void RenderGPass(ID3D11DeviceContext context, Camera camera, ID3D11DepthStencilView depthStencilView, bool inMirror = false)
+    private void RenderGPass(ID3D11DeviceContext context, Camera camera, ID3D11DepthStencilView depthStencilView, uint stencilRef = 0, bool inMirror = false)
     {
         context.RSSetState(inMirror ? _cullFrontState : _cullBackState);
-        context.OMSetDepthStencilState(_defaultDepthState, 0);
+        context.OMSetDepthStencilState(_depthStencilTestState, stencilRef);
         context.OMSetBlendState(null);
 
         context.OMSetRenderTargets(GI.Instance.GBufferRTVs, depthStencilView);
@@ -346,8 +482,7 @@ public class RenderingPipeline : IDisposable
         context.ClearRenderTargetView(GI.Instance.GBufferRTVs[0], clearColor);
         context.ClearRenderTargetView(GI.Instance.GBufferRTVs[1], clearColor);
         context.ClearRenderTargetView(GI.Instance.GBufferRTVs[2], clearColor);
-        context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
-        context.ClearDepthStencilView(GI.Instance.DepthStencilView, DepthStencilClearFlags.Stencil, 1.0f, 0);
+        context.ClearDepthStencilView(depthStencilView, DepthStencilClearFlags.Depth, 1.0f, 0);
 
         var gPassShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.GPass);
         gPassShader.Use();
@@ -455,6 +590,7 @@ public class RenderingPipeline : IDisposable
         context.OMSetBlendState(_noColorWriteBlendState);
 
         context.OMSetRenderTargets(GI.Instance.GBufferRTVs, depthStencilView);
+        context.ClearDepthStencilView(depthStencilView, DepthStencilClearFlags.Stencil, 1.0f, 0);
 
         var shadowShader = GI.Instance.ShaderManager.GetShader(ShaderManager.ShaderType.ShadowVolume);
         shadowShader.Use();
@@ -608,5 +744,7 @@ public class RenderingPipeline : IDisposable
         _lightPassDepthState?.Dispose();
         _additiveBlendState?.Dispose();
         _alphaBlendState?.Dispose();
+        _depthStencilTestState?.Dispose();
+        _depthStencilAntiTestState?.Dispose();
     }
 }

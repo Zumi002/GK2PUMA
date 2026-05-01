@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Shaders\ambientPS.hlsl" />
     <None Remove="Shaders\gPass.hlsli" />
     <None Remove="Shaders\gPassPS.hlsl" />
     <None Remove="Shaders\lighting.hlsli" />
@@ -29,6 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Shaders\ambientPS.hlsl" />
     <EmbeddedResource Include="Shaders\constantBuffers.hlsli" />
     <EmbeddedResource Include="Shaders\blinnPhong.hlsli" />
     <EmbeddedResource Include="Shaders\blinnPhongPS.hlsl" />

@@ -3,6 +3,7 @@
 using GK2PUMA.Graphics;
 
 using Silk.NET.Input;
+using Silk.NET.Maths;
 
 namespace GK2PUMA.Entities;
 
@@ -147,15 +148,22 @@ public class Camera : Entity, IDisposable
         _viewProjBuffer.Bind(1);
     }
 
-    public void UpdateAsMirror(Camera mainCamera, Matrix4x4 mirrorTransform)
+    public void UpdateAsMirror(Camera mainCamera, Matrix4x4 mirrorTransform, float mirrorThickness = 0)
     {
         Vector3 mirrorPos = new(mirrorTransform.M41, mirrorTransform.M42, mirrorTransform.M43);
-        Vector3 mirrorNormal = Vector3.Normalize(new Vector3(-mirrorTransform.M31, -mirrorTransform.M32, -mirrorTransform.M33));
+        Vector3 frontNormal = Vector3.Normalize(new Vector3(-mirrorTransform.M31, -mirrorTransform.M32, -mirrorTransform.M33));
 
-        float d = -Vector3.Dot(mirrorNormal, mirrorPos);
-        Plane mirrorPlane = new(mirrorNormal, d);
+        float cameraSide = Vector3.Dot(mainCamera.Position - mirrorPos, frontNormal);
+        bool isFront = cameraSide >= 0;
 
-        ClipPlane = new Vector4(mirrorNormal.X, mirrorNormal.Y, mirrorNormal.Z, d);
+        Vector3 activeNormal = isFront ? frontNormal : -frontNormal;
+
+        Vector3 surfacePos = mirrorPos + activeNormal * (mirrorThickness/2+0.01f);
+
+        float d = -Vector3.Dot(activeNormal, surfacePos);
+        System.Numerics.Plane mirrorPlane = new(activeNormal, d);
+
+        ClipPlane = new Vector4(activeNormal.X, activeNormal.Y, activeNormal.Z, d + 0.01f);
 
         Matrix4x4 reflectionMatrix = Matrix4x4.CreateReflection(mirrorPlane);
         ViewMatrix = Matrix4x4.Multiply(reflectionMatrix, mainCamera.ViewMatrix);
@@ -167,7 +175,7 @@ public class Camera : Entity, IDisposable
 
         if (_projectionDirty)
         {
-            ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfViewLeftHanded(_fovY, _aspectRatio, _nearPlane, _farPlane);
+            ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfViewLeftHanded(_fovY, AspectRatio, _nearPlane, _farPlane);
             _projectionDirty = false;
         }
     }

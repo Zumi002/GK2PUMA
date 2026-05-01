@@ -6,7 +6,7 @@ float4 phong(float3 worldPos, float3 norm, float3 view)
 {
     view = normalize(view);
     norm = normalize(norm);
-    float3 color = SurfaceColor.rgb * ka;
+    float3 color = SurfaceColor * ka;
     for (int k = 0; k < NLIGHTS; ++k)
     {
         float3 lightVec = normalize(LightPos[k].xyz - worldPos);

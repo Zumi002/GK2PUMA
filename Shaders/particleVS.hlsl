@@ -28,5 +28,7 @@ PS_INPUT VS(VS_INPUT input)
     output.AgeAlpha = saturate(1.0f - (input.Age / input.MaxAge));
     output.Texture = input.Texture;
     
+    output.ClipDist = dot(float4(pos, 1.0f), ClipPlane);
+    
     return output;
 }

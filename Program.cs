@@ -91,6 +91,9 @@ internal class Program
         var unlitShader = new Shader($"{ShaderManager.BasePath}unlitVS.hlsl", $"{ShaderManager.BasePath}unlitPS.hlsl",
             positionNormalInputElements);
 
+        var ambientShader = new Shader($"{ShaderManager.BasePath}unlitVS.hlsl", $"{ShaderManager.BasePath}ambientPS.hlsl",
+            positionNormalInputElements);
+
         var phongShader = new Shader($"{ShaderManager.BasePath}blinnPhongVS.hlsl",
             $"{ShaderManager.BasePath}blinnPhongPS.hlsl", positionNormalInputElements);
 
@@ -105,7 +108,7 @@ internal class Program
 
         var shadowVolumeShader = new Shader(
             $"{ShaderManager.BasePath}shadowVolumeVS.hlsl",
-            $"{ShaderManager.BasePath}unlitPS.hlsl",
+            null,
             positionNormalInputElements,
             $"{ShaderManager.BasePath}shadowVolumeGS.hlsl"
         );
@@ -134,6 +137,7 @@ internal class Program
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.ShadowVolume, shadowVolumeShader);
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.AmbientPass, ambientPassShader);
         GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.Particle, particleShader);
+        GI.Instance.ShaderManager.AddShader(ShaderManager.ShaderType.Ambient, ambientShader);
 
         var input = s_window.CreateInput();
         s_keyboard = input.Keyboards[0];
