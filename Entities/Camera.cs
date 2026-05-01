@@ -20,6 +20,7 @@ public class Camera : Entity, IDisposable
 
     public Matrix4x4 ViewMatrix { get; private set; }
     public Matrix4x4 ProjectionMatrix { get; private set; }
+    public Vector4 ClipPlane = new Vector4(0, 0, 0, 1.0f);
 
     private Vector2 _lastMousePosition;
     private bool _isFirstMove = true;
@@ -140,6 +141,7 @@ public class Camera : Entity, IDisposable
         {
             View = ViewMatrix,
             Projection = ProjectionMatrix,
+            ClipPlane = ClipPlane,
             Pos = Position,
         });
         _viewProjBuffer.Bind(1);
@@ -147,23 +149,22 @@ public class Camera : Entity, IDisposable
 
     public void UpdateAsMirror(Camera mainCamera, Matrix4x4 mirrorTransform)
     {
-        Vector3 mirrorPos = new Vector3(mirrorTransform.M41, mirrorTransform.M42, mirrorTransform.M43);
-        Vector3 mirrorNormal = Vector3.Normalize(new Vector3(mirrorTransform.M31, mirrorTransform.M32, mirrorTransform.M33));
+        Vector3 mirrorPos = new(mirrorTransform.M41, mirrorTransform.M42, mirrorTransform.M43);
+        Vector3 mirrorNormal = Vector3.Normalize(new Vector3(-mirrorTransform.M31, -mirrorTransform.M32, -mirrorTransform.M33));
 
         float d = -Vector3.Dot(mirrorNormal, mirrorPos);
-        Plane mirrorPlane = new Plane(mirrorNormal, d);
+        Plane mirrorPlane = new(mirrorNormal, d);
+
+        ClipPlane = new Vector4(mirrorNormal.X, mirrorNormal.Y, mirrorNormal.Z, d);
 
         Matrix4x4 reflectionMatrix = Matrix4x4.CreateReflection(mirrorPlane);
-
+        ViewMatrix = Matrix4x4.Multiply(reflectionMatrix, mainCamera.ViewMatrix);
         Position = Vector3.Transform(mainCamera.Position, reflectionMatrix);
         Forward = Vector3.TransformNormal(mainCamera.Forward, reflectionMatrix);
         Up = Vector3.TransformNormal(mainCamera.Up, reflectionMatrix);
         Right = Vector3.TransformNormal(mainCamera.Right, reflectionMatrix);
-
-        ViewMatrix = Matrix4x4.CreateLookAtLeftHanded(Position, Position + Forward, Up);
-
         AspectRatio = mainCamera.AspectRatio;
-        
+
         if (_projectionDirty)
         {
             ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfViewLeftHanded(_fovY, _aspectRatio, _nearPlane, _farPlane);

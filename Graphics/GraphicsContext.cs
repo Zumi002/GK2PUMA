@@ -17,6 +17,7 @@ public class GraphicsContext
     public IDXGISwapChain SwapChain { get; set; }
     public ID3D11RenderTargetView RenderTargetView { get; set; }
     public ID3D11DepthStencilView DepthStencilView { get; set; }
+    public ID3D11DepthStencilView DepthStencilMirrorView { get; set; }
     public ShaderManager ShaderManager { get; set; } = new ShaderManager();
     public LightManager LightManager { get; } = new();
     public RenderingPipeline Pipeline { get; } = new();
@@ -40,6 +41,7 @@ public class GraphicsContext
 
         RenderTargetView?.Dispose();
         DepthStencilView?.Dispose();
+        DepthStencilMirrorView?.Dispose();
         for (int i = 0; i < 3; i++)
         {
             GBufferRTVs[i]?.Dispose();
@@ -65,6 +67,7 @@ public class GraphicsContext
 
         using var depthBuffer = Device.CreateTexture2D(depthDesc);
         DepthStencilView = Device.CreateDepthStencilView(depthBuffer);
+        DepthStencilMirrorView = Device.CreateDepthStencilView(depthBuffer);
 
         var gBufferDesc = new Texture2DDescription
         {

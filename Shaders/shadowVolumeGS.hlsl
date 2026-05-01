@@ -1,12 +1,6 @@
 ﻿#include "lighting.hlsli"
 #include "shadowVolume.hlsli"
-
-cbuffer ConstantBufferCamera : register(b1)
-{
-    matrix View;
-    matrix Projection;
-    float3 CamPos;
-}
+#include "constantBuffers.hlsli"
 
 float4 Transform(float3 vert)
 {

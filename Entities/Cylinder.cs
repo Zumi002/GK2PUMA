@@ -21,7 +21,7 @@ public sealed class Cylinder : Entity, IDisposable
     {
         Color = color;
         _mesh = MeshGenerator.CreateCylinderMesh(CylinderLidMeshPrecision, CylinderWidthMeshPrecision);
-        Transform.Position = position;
+        Transform.Position = position + new Vector3(0,0,1);
     }
 
     public override void Render(Camera camera)

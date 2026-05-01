@@ -1,16 +1,10 @@
 ﻿#include "lighting.hlsli"
+#include "constantBuffers.hlsli"
 
 Texture2D ColorMap : register(t0);
 Texture2D NormalMap : register(t1);
 Texture2D WorldPosMap : register(t2);
 SamplerState Sampler : register(s0);
-
-cbuffer ConstantBufferCamera : register(b1)
-{
-    matrix View;
-    matrix Projection;
-    float3 CamPos;
-}
 
 struct PS_INPUT
 {

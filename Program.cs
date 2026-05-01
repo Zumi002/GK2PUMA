@@ -141,7 +141,7 @@ internal class Program
 
         s_camera = new Camera((float)width / height);
 
-        var myQuad = new Quad();
+        var myQuad = new Mirror();
         myQuad.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1f, 2.5f);
         myQuad.Transform.Rotation = new Vector3(30.0f * MathF.PI / 180, 0.0f, 0);
         myQuad.Transform.Scale = 1.0f;

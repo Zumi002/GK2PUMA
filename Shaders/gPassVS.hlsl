@@ -10,5 +10,7 @@ PS_INPUT VS(VS_INPUT input)
     output.Pos = mul(Projection, mul(View, worldPos));
     output.Norm = normalize(mul(input.Norm, (float3x3) ModelInv));
 
+    output.ClipDist = dot(worldPos, ClipPlane)-0.0001;
+    
     return output;
 }

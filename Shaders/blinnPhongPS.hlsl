@@ -1,18 +1,6 @@
 #include "constantBuffers.hlsli"
 #include "blinnPhong.hlsli"
-
-#define NLIGHTS 2
-
-cbuffer LightBuffer : register(b3)
-{
-    float4 LightPos[NLIGHTS];
-    float4 LightColor[NLIGHTS];
-}
-
-static const float ks = 0.3;
-static const float kd = 0.7;
-static const float ka = 0.1;
-static const float m = 20.0;
+#include "lighting.hlsli"
 
 float4 phong(float3 worldPos, float3 norm, float3 view)
 {

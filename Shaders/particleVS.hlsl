@@ -1,11 +1,5 @@
 ﻿#include "particle.hlsli"
-
-cbuffer ConstantBufferCamera : register(b1)
-{
-    matrix View;
-    matrix Projection;
-    float3 CamPos;
-}
+#include "constantBuffers.hlsli"
 
 PS_INPUT VS(VS_INPUT input)
 {

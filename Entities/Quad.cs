@@ -6,7 +6,7 @@ namespace GK2PUMA.Entities;
 
 public class Quad : Entity
 {
-    private readonly Mesh _mesh;
+    protected readonly Mesh _mesh;
 
     public readonly Transform Transform = new Transform();
     public Vector4 Color = new Vector4(0.8f, 0.2f, 0.2f, 1.0f);

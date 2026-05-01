@@ -5,10 +5,13 @@ cbuffer ConstantBuffer : register(b0)
     matrix ModelInv;
 }
 
-cbuffer ConstantBuffer : register(b1)
+cbuffer ConstantBufferCamera : register(b1)
 {
     matrix View;
     matrix Projection;
+    float4 ClipPlane;
+    float3 CamPos;
+    float Padding;
 }
 
 cbuffer ConstantBuffer : register(b2)
