@@ -399,8 +399,6 @@ public class RenderingPipeline : IDisposable
             ModelInv = mirrorCommand.InvTransform
         });
 
-
-
         mirrorCommand.Mesh.Bind();
         context.DrawIndexed((uint)mirrorCommand.Mesh.IndexCount, 0, 0);
         context.OMSetRenderTargets(GI.Instance.GBufferRTVs[0], GI.Instance.DepthStencilMirrorView);
