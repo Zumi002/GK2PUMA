@@ -149,7 +149,15 @@ internal class Program
         myQuad.Transform.Position = new Vector3(0, -InsideCube.HalfSize + 1f, 2.5f);
         myQuad.Transform.Rotation = new Vector3(30.0f * MathF.PI / 180, 0.0f, 0);
         myQuad.Transform.Scale = 1.0f;
+        myQuad.Color = new Vector4(0.5f, 0.5f, 0.5f, 1);
         GameObjects.Add(myQuad);
+
+        var myQuad2 = new Mirror();
+        myQuad2.Transform.Position = new Vector3(2.5f, -InsideCube.HalfSize + 1f, 0f);
+        myQuad2.Transform.Rotation = new Vector3(-30.0f * MathF.PI / 180, 180f, 0);
+        myQuad2.Transform.Scale = 1.0f;
+        myQuad2.Color = new Vector4(0.5f, 0.5f, 0.5f, 1);
+        GameObjects.Add(myQuad2);
 
         var particleEmitter = new ParticleEmitter();
 

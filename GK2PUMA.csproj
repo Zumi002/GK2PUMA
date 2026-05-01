@@ -24,6 +24,7 @@
     <None Remove="Shaders\tex.png" />
     <None Remove="Shaders\unlitPS.hlsl" />
     <None Remove="Shaders\unlitVS.hlsl" />
+    <None Remove="Textures\corrugated_iron_02_diff_4k.jpg" />
     <None Remove="Textures\rain.png" />
     <None Remove="Textures\rain2.png" />
     <None Remove="Textures\rain3.png" />
@@ -47,6 +48,7 @@
     <EmbeddedResource Include="Shaders\shadowVolume.hlsli" />
     <EmbeddedResource Include="Shaders\shadowVolumeGS.hlsl" />
     <EmbeddedResource Include="Shaders\shadowVolumeVS.hlsl" />
+    <EmbeddedResource Include="Textures\corrugated_iron_02_diff_4k.jpg" />
     <EmbeddedResource Include="Textures\rain.png" />
     <EmbeddedResource Include="Shaders\unlitPS.hlsl" />
     <EmbeddedResource Include="Shaders\unlitVS.hlsl" />

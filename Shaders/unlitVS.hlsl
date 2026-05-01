@@ -9,6 +9,7 @@ struct VS_INPUT
 struct PS_INPUT
 {
     float4 Pos : SV_POSITION;
+    float2 UV : TEXCOORD0;
     float3 Norm : NORMAL;
 };
 
@@ -17,6 +18,7 @@ PS_INPUT VS(VS_INPUT input)
     PS_INPUT output = (PS_INPUT) 0;
     
     float4 worldPos = mul(Model, float4(input.Pos, 1.0f));
+    output.UV = (input.Pos.xy + 1) * 0.5f;
     float4 viewPos = mul(View, worldPos);
     output.Pos = mul(Projection, viewPos);
     

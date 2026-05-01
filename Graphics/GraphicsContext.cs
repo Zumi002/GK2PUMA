@@ -25,6 +25,7 @@ public class GraphicsContext
     public ID3D11RenderTargetView[] GBufferRTVs = new ID3D11RenderTargetView[3];
     public ID3D11ShaderResourceView[] GBufferSRVs = new ID3D11ShaderResourceView[3];
     public ID3D11SamplerState DefaultSampler;
+    public ID3D11ShaderResourceView DefaultWhiteTexture;
 
     public uint Width { get; private set; }
     public uint Height { get; private set; }
@@ -67,7 +68,8 @@ public class GraphicsContext
 
         using var depthBuffer = Device.CreateTexture2D(depthDesc);
         DepthStencilView = Device.CreateDepthStencilView(depthBuffer);
-        DepthStencilMirrorView = Device.CreateDepthStencilView(depthBuffer);
+        using var depthBuffer2 = Device.CreateTexture2D(depthDesc);
+        DepthStencilMirrorView = Device.CreateDepthStencilView(depthBuffer2);
 
         var gBufferDesc = new Texture2DDescription
         {
@@ -101,6 +103,34 @@ public class GraphicsContext
                 MaxLOD = float.MaxValue
             };
             DefaultSampler = Device.CreateSamplerState(samplerDesc);
+        }
+
+        if (DefaultWhiteTexture == null)
+        {
+            var whiteDesc = new Texture2DDescription
+            {
+                Width = 1,
+                Height = 1,
+                MipLevels = 1,
+                ArraySize = 1,
+                Format = Format.R8G8B8A8_UNorm,
+                SampleDescription = new SampleDescription(1, 0),
+                Usage = ResourceUsage.Immutable,
+                BindFlags = BindFlags.ShaderResource,
+                CPUAccessFlags = CpuAccessFlags.None,
+                MiscFlags = ResourceOptionFlags.None
+            };
+
+            unsafe
+            {
+                uint[] pixelData = { 0xFFFFFFFF };
+                fixed (uint* ptr = pixelData)
+                {
+                    var data = new SubresourceData((IntPtr)ptr, 4);
+                    using var texture = Device.CreateTexture2D(whiteDesc, new[] { data });
+                    DefaultWhiteTexture = Device.CreateShaderResourceView(texture);
+                }
+            }
         }
 
         Context.RSSetViewport(new Viewport(0, 0, width, height));
